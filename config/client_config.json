@@ -1,0 +1,12 @@
+{
+    "server_ip": "192.168.1.100",
+    "server_port": 9000,
+    "client_id": "client-01",
+    "encryption_algorithm": "AES-GCM",
+    "key_exchange": "ECDH",
+    "totp_secret": "JBSWY3DPEHPK3PXP",
+    "hmac_algorithm": "HmacSHA256",
+    "scan_threshold": 20,
+    "scan_window_seconds": 5
+  }
+  
