@@ -8,7 +8,6 @@ import javax.crypto.spec.SecretKeySpec;
 import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Scanner;
 
@@ -16,6 +15,7 @@ public class SecureJsonClient {
 
     public static void main(String[] args) {
         try {
+            // Load client configuration
             JSONObject config = JsonIO.readObject(new File("config/client_config.json"));
 
             String serverIp = config.get("server_ip").toString();
@@ -40,13 +40,14 @@ public class SecureJsonClient {
                     String data = clientId + message + timestamp;
                     String hmac = computeHMAC(data, sharedSecret);
 
-                    org.json.JSONObject json = new org.json.JSONObject();
-                    json.put("client_id", clientId);
-                    json.put("message", message);
-                    json.put("timestamp", timestamp);
-                    json.put("hmac", hmac);
+                    // Construct valid JSON manually
+                    String jsonString = String.format(
+                        "{\"client_id\":\"%s\",\"message\":\"%s\",\"timestamp\":\"%s\",\"hmac\":\"%s\"}",
+                        escape(clientId), escape(message), escape(timestamp), escape(hmac)
+                    );
 
-                    out.write(json.toString() + "\n");
+                    System.out.println("[Debug] Sending JSON: " + jsonString);
+                    out.write(jsonString + "\n");
                     out.flush();
 
                     String response = in.readLine();
@@ -60,6 +61,7 @@ public class SecureJsonClient {
         }
     }
 
+    // HMAC generator
     private static String computeHMAC(String data, String key) {
         try {
             Mac mac = Mac.getInstance("HmacSHA256");
@@ -73,5 +75,10 @@ public class SecureJsonClient {
         } catch (Exception e) {
             throw new RuntimeException("HMAC calculation failed", e);
         }
+    }
+
+    // Escapes double quotes inside strings to keep JSON valid
+    private static String escape(String input) {
+        return input.replace("\"", "\\\"");
     }
 }
