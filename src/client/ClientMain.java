@@ -46,7 +46,7 @@ public class ClientMain {
         System.out.println("[Client] Disconnected.");
     }
 
-    // 📡 Port scanner function
+    // Port scanner function
     private static void scanOpenPorts(String os) {
         String command;
         if (os.contains("win")) {

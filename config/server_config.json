@@ -1,7 +1,7 @@
 {
     "server_port": 9000,
     "max_clients": 10,
-    "allowed_clients": ["192.168.1.10", "192.168.1.11"],
+    "allowed_clients": ["127.0.0.1", "192.168.1.10", "192.168.1.11"],
     "encryption_algorithm": "AES-GCM",
     "key_exchange": "ECDH",
     "hmac_algorithm": "HmacSHA256",
