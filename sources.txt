@@ -6,7 +6,7 @@ server\CHAPAuthenticator.java
 server\MessageEncryptor.java
 server\NonceTracker.java
 server\Server.java
+server\ServerClientHandler.java
 server\ServerMain.java
 server\SessionKeyManager.java
 server\TOTPValidator.java
-server\ServerClientHandler.java

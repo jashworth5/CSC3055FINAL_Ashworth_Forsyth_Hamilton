@@ -1,35 +1,29 @@
-package shared;
+package server;
 
-import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
-
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
+import java.util.Map;
 
 public class SessionKeyManager {
-    private final HashMap<String, SecretKey> sessionKeys = new HashMap<>();
 
-    // Generate and store a new session key for a given session ID
-    public SecretKey generateSessionKey(String sessionId) {
-        try {
-            KeyGenerator keyGen = KeyGenerator.getInstance("AES");
-            keyGen.init(256); // AES-256
-            SecretKey key = keyGen.generateKey();
-            sessionKeys.put(sessionId, key);
-            return key;
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-            return null;
-        }
+    private final Map<String, byte[]> sessionKeys = new HashMap<>();
+
+    // Store a session key for a given username/client
+    public void storeSessionKey(String username, byte[] key) {
+        sessionKeys.put(username, key);
     }
 
-    // Retrieve an existing session key
-    public SecretKey getSessionKey(String sessionId) {
-        return sessionKeys.get(sessionId);
+    // Retrieve the session key for a given user
+    public byte[] getSessionKey(String username) {
+        return sessionKeys.get(username);
     }
 
-    // Remove session key (e.g., on logout or expiration)
-    public void removeSessionKey(String sessionId) {
-        sessionKeys.remove(sessionId);
+    // Remove session key when client logs out or times out
+    public void removeSessionKey(String username) {
+        sessionKeys.remove(username);
+    }
+
+    // Check if key exists for a user
+    public boolean hasSessionKey(String username) {
+        return sessionKeys.containsKey(username);
     }
 }

@@ -7,6 +7,7 @@ import java.net.Socket;
 
 public class ServerClientHandler implements Runnable {
     private final Socket clientSocket;
+    private final CHAPAuthenticator authenticator = new CHAPAuthenticator();
 
     public ServerClientHandler(Socket socket) {
         this.clientSocket = socket;
@@ -18,20 +19,26 @@ public class ServerClientHandler implements Runnable {
             BufferedReader input = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             PrintWriter output = new PrintWriter(clientSocket.getOutputStream(), true)
         ) {
-            output.println("Welcome to the secure server!");
+            output.println("Welcome! Please enter your username:");
+            String username = input.readLine();
 
-            String message;
-            while ((message = input.readLine()) != null) {
-                System.out.println("Received: " + message);
-                output.println("Echo: " + message);
+            String challenge = authenticator.generateChallenge(username);
+            output.println("CHALLENGE:" + challenge);
+
+            String clientHash = input.readLine(); // this is hash(challenge + password)
+            if (authenticator.verifyResponse(username, clientHash)) {
+                output.println("Authentication successful!");
+            } else {
+                output.println("Authentication failed.");
+                clientSocket.close();
+                return;
             }
+
+            // Continue with secure communication
+            output.println("Welcome to the secure server!");
 
         } catch (Exception e) {
             e.printStackTrace();
-        } finally {
-            try {
-                clientSocket.close();
-            } catch (Exception ignored) {}
         }
     }
 }
