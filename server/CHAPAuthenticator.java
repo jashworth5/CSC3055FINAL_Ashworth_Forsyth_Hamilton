@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Random;
 
 public class CHAPAuthenticator {
-    private final HashMap<String, String> userPasswords = new HashMap<>(); // username -> password
+    private final HashMap<String, String> userPasswords = new HashMap<>(); // username → password
     private final HashMap<String, String> activeChallenges = new HashMap<>();
 
     public CHAPAuthenticator() {
@@ -20,6 +20,13 @@ public class CHAPAuthenticator {
         String challenge = String.valueOf(new Random().nextInt(999999));
         activeChallenges.put(username, challenge);
         return challenge;
+    }
+
+    // You can call this to get the expected hash server-side
+    public String getExpectedHash(String username, String password) throws NoSuchAlgorithmException {
+        String challenge = activeChallenges.get(username);
+        if (challenge == null) return null;
+        return hash(challenge + password);
     }
 
     public boolean verifyResponse(String username, String clientHash) {
@@ -39,6 +46,7 @@ public class CHAPAuthenticator {
         }
     }
 
+    // Private utility
     private String hash(String input) throws NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance("SHA-256");
         byte[] digest = md.digest(input.getBytes());

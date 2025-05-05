@@ -1,29 +1,26 @@
 package server;
 
-import java.util.HashMap;
-import java.util.Map;
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
 
 public class SessionKeyManager {
+    private static SecretKey sessionKey;
 
-    private final Map<String, byte[]> sessionKeys = new HashMap<>();
-
-    // Store a session key for a given username/client
-    public void storeSessionKey(String username, byte[] key) {
-        sessionKeys.put(username, key);
+    public static void generateSessionKey() {
+        try {
+            KeyGenerator keyGen = KeyGenerator.getInstance("AES");
+            keyGen.init(256); // AES-256
+            sessionKey = keyGen.generateKey();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
-    // Retrieve the session key for a given user
-    public byte[] getSessionKey(String username) {
-        return sessionKeys.get(username);
+    public static SecretKey getSessionKey() {
+        return sessionKey;
     }
 
-    // Remove session key when client logs out or times out
-    public void removeSessionKey(String username) {
-        sessionKeys.remove(username);
-    }
-
-    // Check if key exists for a user
-    public boolean hasSessionKey(String username) {
-        return sessionKeys.containsKey(username);
+    public static void setSessionKey(SecretKey key) {
+        sessionKey = key;
     }
 }
