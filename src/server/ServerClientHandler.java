@@ -1,164 +1,145 @@
 package server;
 
 import org.json.JSONObject;
+import utils.HashUtil;
 import utils.TOTPValidator;
 
 import javax.crypto.SecretKey;
 import java.io.*;
 import java.net.Socket;
 import java.security.MessageDigest;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Base64;
 import java.util.Map;
+import java.util.HashMap;
 
 public class ServerClientHandler implements Runnable {
-    private final Socket clientSocket;
-    private static final HashSet<String> seenNonces = new HashSet<>();
-    private static String previousLogHash = "";
-    private static final CHAPAuthenticator auth = new CHAPAuthenticator();
+    private final Socket socket;
+    private String username;
 
-    // Hardcoded user TOTP secrets (replace with secure storage in real use)
-    private static final Map<String, String> totpSecrets = new HashMap<>();
-    static {
-        totpSecrets.put("alice", "JBSWY3DPEHPK3PXP");  // Base32 secret for alice
-        totpSecrets.put("bob", "KZQXGIDCMFZWK3TQ");    // Another user (optional)
-    }
+    private static final CHAPAuthenticator chap = new CHAPAuthenticator();
+    private static final TOTPValidator totpValidator = new TOTPValidator("JBSWY3DPEHPK3PXP"); // test secret
+    private static final File LOG_FILE = new File("logs/secure_log.txt");
 
     public ServerClientHandler(Socket socket) {
-        this.clientSocket = socket;
+        this.socket = socket;
     }
 
-    @Override
     public void run() {
         try (
-            BufferedReader input = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            PrintWriter output = new PrintWriter(clientSocket.getOutputStream(), true)
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()))
         ) {
-            System.out.println("New client connected: " + clientSocket.getRemoteSocketAddress());
-
-            // Step 1: Receive USERNAME
-            String usernameMsg = input.readLine();
-            if (usernameMsg == null || !usernameMsg.startsWith("USERNAME:")) {
-                output.println("Invalid initial message.");
-                return;
+            // Step 1: Username
+            String line = in.readLine();
+            if (line == null || !line.startsWith("USERNAME:")) {
+                out.write("ERROR: Expected USERNAME\n"); out.flush(); return;
             }
-            String username = usernameMsg.substring("USERNAME:".length());
+            username = line.substring(9).trim();
 
-            // Step 2: Send challenge
-            String challenge = auth.generateChallenge(username);
-            output.println(challenge);
+            // Step 2: CHAP challenge
+            String challenge = chap.generateChallenge(username);
+            out.write(challenge + "\n"); out.flush();
 
-            // Step 3: Receive response hash
-            String response = input.readLine();
-            if (response == null || !response.startsWith("RESPONSE:")) {
-                output.println("Invalid response.");
-                return;
+            // Step 3: CHAP response
+            line = in.readLine();
+            if (line == null || !line.startsWith("RESPONSE:")) {
+                out.write("ERROR: Expected RESPONSE\n"); out.flush(); return;
             }
 
-            String[] parts = response.split(":");
-            if (parts.length != 3) {
-                output.println("Invalid response format.");
-                return;
+            String[] parts = line.split(":", 3);
+            if (parts.length != 3 || !parts[1].equals(username)) {
+                out.write("ERROR: Malformed RESPONSE\n"); out.flush(); return;
             }
 
-            String responseUser = parts[1];
             String clientHash = parts[2];
-
-            // Step 4: Verify password challenge-response
-            boolean valid = auth.verifyResponse(responseUser, clientHash);
-            if (!valid) {
-                output.println("Authentication failed!");
-                return;
+            if (!chap.verifyResponse(username, clientHash)) {
+                out.write("ERROR: Authentication failed\n"); out.flush(); return;
             }
 
-            output.println("Authentication successful!");
+            out.write("Authentication successful\n"); out.flush();
 
-            // Step 5: TOTP Verification
-            String totpMsg = input.readLine();
-            if (totpMsg == null || !totpMsg.startsWith("TOTP:")) {
-                output.println("Invalid TOTP message.");
-                return;
+            // Step 4: TOTP verification
+            line = in.readLine();
+            if (line == null || !line.startsWith("TOTP:")) {
+                out.write("ERROR: Expected TOTP\n"); out.flush(); return;
             }
 
-            String totpCode = totpMsg.substring("TOTP:".length());
-            String userSecret = totpSecrets.get(username);
-            if (userSecret == null) {
-                output.println("No TOTP secret found.");
-                return;
+            String totpCode = line.substring(5).trim();
+            if (!totpValidator.validateCode(totpCode)) {
+                out.write("ERROR: TOTP verification failed\n"); out.flush(); return;
             }
 
-            TOTPValidator totpValidator = new TOTPValidator(userSecret);
-            boolean totpValid = totpValidator.validateCode(totpCode);
+            out.write("TOTP verified\n"); out.flush();
 
-            if (!totpValid) {
-                output.println("TOTP verification failed.");
-                return;
-            }
-
-            output.println("TOTP verified!");
+            // Step 5: Setup session key
+            SessionKeyManager.generateSessionKey(username);
+            SecretKey key = SessionKeyManager.getSessionKey(username);
 
             // Step 6: Receive encrypted alert
-            String encryptedMessage = input.readLine();
-            if (encryptedMessage == null) {
-                System.out.println("No encrypted message received.");
-                return;
+            String encrypted = in.readLine();
+            if (encrypted == null || encrypted.isEmpty()) {
+                out.write("ERROR: No encrypted message\n"); out.flush(); return;
             }
 
-            System.out.println("Encrypted message received: " + encryptedMessage);
+            String decrypted = MessageEncryptor.decrypt(encrypted, key);
+            JSONObject json = new JSONObject(decrypted);
 
-            SessionKeyManager.generateSessionKey();
-            SecretKey sessionKey = SessionKeyManager.getSessionKey();
-            String json = MessageEncryptor.decrypt(encryptedMessage, sessionKey);
-            System.out.println("Decrypted message: " + json);
+            String receivedHmac = json.getString("hmac");
+            json.remove("hmac");
 
-            JSONObject alert = new JSONObject(json);
+            // ✅ Use helper method to convert map to Map<String, String>
+            String computedHmac = MessageEncryptor.computeHMAC(toStringMap(json.toMap()), key);
 
-            // Step 7: Nonce protection
-            String nonce = alert.getString("nonce");
-            if (!isFresh(nonce)) {
-                System.out.println("Replayed alert blocked (nonce reused).");
-                return;
+            if (!receivedHmac.equals(computedHmac)) {
+                out.write("ERROR: Invalid HMAC\n"); out.flush(); return;
             }
 
-            // Step 8: Log alert with chained hash
-            logAlert(alert.toString());
-            System.out.println("Logged alert: " + alert);
+            out.write("Alert received securely\n"); out.flush();
+            System.out.println("[Server] Secure alert from " + username + ": " + decrypted);
+            logSecure(decrypted);
 
         } catch (Exception e) {
-            System.out.println("Server error: " + e.getMessage());
+            System.err.println("[Server] Handler error: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            try { socket.close(); } catch (IOException ignored) {}
         }
     }
 
-    private boolean isFresh(String nonce) {
-        synchronized (seenNonces) {
-            if (seenNonces.contains(nonce)) return false;
-            seenNonces.add(nonce);
-            return true;
+    // ✅ Helper to convert Map<String, Object> to Map<String, String>
+    private static Map<String, String> toStringMap(Map<String, Object> input) {
+        Map<String, String> output = new HashMap<>();
+        for (Map.Entry<String, Object> entry : input.entrySet()) {
+            output.put(entry.getKey(), String.valueOf(entry.getValue()));
         }
+        return output;
     }
 
-    private void logAlert(String alert) {
-        try {
-            String combined = previousLogHash + alert;
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(combined.getBytes());
-            previousLogHash = bytesToHex(hash);
+    private void logSecure(String message) throws Exception {
+        LOG_FILE.getParentFile().mkdirs();
+        String prevHash = "0";
 
-            try (FileWriter writer = new FileWriter("alert_log.txt", true)) {
-                writer.write("Hash: " + previousLogHash + "\n");
-                writer.write("Alert: " + alert + "\n\n");
+        if (LOG_FILE.exists()) {
+            String last = null;
+            try (BufferedReader r = new BufferedReader(new FileReader(LOG_FILE))) {
+                String line;
+                while ((line = r.readLine()) != null) last = line;
             }
-        } catch (Exception e) {
-            System.out.println("Logging error: " + e.getMessage());
+            if (last != null && last.contains("||")) {
+                prevHash = last.split("\\|\\|")[1];
+            }
+        }
+
+        String combined = message + prevHash;
+        String newHash = hash(combined);
+
+        try (BufferedWriter w = new BufferedWriter(new FileWriter(LOG_FILE, true))) {
+            w.write(message + "||" + newHash + "\n");
         }
     }
 
-    private String bytesToHex(byte[] bytes) {
-        StringBuilder hex = new StringBuilder();
-        for (byte b : bytes) {
-            hex.append(String.format("%02x", b));
-        }
-        return hex.toString();
+    private String hash(String input) throws Exception {
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        return Base64.getEncoder().encodeToString(md.digest(input.getBytes()));
     }
 }

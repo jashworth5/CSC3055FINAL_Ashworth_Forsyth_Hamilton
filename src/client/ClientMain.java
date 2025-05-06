@@ -1,71 +1,93 @@
 package client;
 
-import java.io.*;
-import java.net.*;
+import org.json.JSONObject;
+import utils.HashUtil;
+import server.MessageEncryptor;
+import server.SessionKeyManager;
+
+import javax.crypto.SecretKey;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Scanner;
 
 public class ClientMain {
-
-    private static final String SERVER_IP = "127.0.0.1";
-    private static final int SERVER_PORT = 9000;
-
     public static void main(String[] args) {
+        System.out.println("Client started.");
 
-        // Detect operating system
-        String os = System.getProperty("os.name").toLowerCase();
-        System.out.println("[Client] Detected OS: " + os);
-
-        // Scan open/listening ports
-        scanOpenPorts(os);
-
-        // Connect to server
         try (
-            Socket socket = new Socket(SERVER_IP, SERVER_PORT);
-            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+            Socket socket = new Socket("localhost", 9999);
+            BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            PrintWriter output = new PrintWriter(socket.getOutputStream(), true);
             Scanner scanner = new Scanner(System.in)
         ) {
-            System.out.println("[Client] Connected to server at " + SERVER_IP + ":" + SERVER_PORT);
+            // Step 1: Send username
+            System.out.print("Welcome! Please enter your username: ");
+            String username = scanner.nextLine();
+            output.println("USERNAME:" + username);
 
-            while (true) {
-                System.out.print("[Client] Enter message (or 'exit'): ");
-                String message = scanner.nextLine();
-                if (message.equalsIgnoreCase("exit")) break;
-
-                out.write(message + "\n");
-                out.flush();
-
-                String response = in.readLine();
-                System.out.println("[Client] Server says: " + response);
+            // Step 2: Receive challenge
+            String challenge = input.readLine();
+            if (challenge == null || challenge.isEmpty()) {
+                System.out.println("Server did not respond with a challenge.");
+                return;
             }
 
-        } catch (IOException e) {
-            System.err.println("[Client] Error: " + e.getMessage());
-        }
+            // Step 3: Password input and response
+            System.out.print("Password: ");
+            String password = scanner.nextLine();
+            String responseHash = HashUtil.hash(challenge + password);
+            output.println("RESPONSE:" + username + ":" + responseHash);
 
-        System.out.println("[Client] Disconnected.");
-    }
-
-    // Port scanner function
-    private static void scanOpenPorts(String os) {
-        String command;
-        if (os.contains("win")) {
-            command = "netstat -an";
-        } else {
-            command = "lsof -i -P -n | grep LISTEN";
-        }
-
-        System.out.println("[Client] Scanning open ports...");
-        try {
-            Process process = new ProcessBuilder("bash", "-c", command).start();
-            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
-
-            String line;
-            while ((line = reader.readLine()) != null) {
-                System.out.println("  " + line);
+            // Step 4: Read password auth result
+            String authResponse = input.readLine();
+            if (authResponse == null || !authResponse.contains("successful")) {
+                System.out.println("Server: Authentication failed or no response.");
+                return;
             }
-        } catch (IOException e) {
-            System.err.println("[Client] Port scan failed: " + e.getMessage());
+            System.out.println("Server: " + authResponse);
+
+            // Step 5: Send TOTP code
+            System.out.print("Enter your TOTP code: ");
+            String totp = scanner.nextLine();
+            output.println("TOTP:" + totp);
+
+            // Step 6: Read TOTP response
+            String totpResponse = input.readLine();
+            if (totpResponse == null || !totpResponse.contains("TOTP verified")) {
+                System.out.println("Server: TOTP verification failed.");
+                return;
+            }
+            System.out.println("Server: " + totpResponse);
+
+            // Step 7: Session key
+            SessionKeyManager.generateSessionKey(username);
+            SecretKey sessionKey = SessionKeyManager.getSessionKey(username);
+
+
+            // Step 8: Create alert
+            Map<String, String> alert = new HashMap<>();
+            alert.put("timestamp", String.valueOf(System.currentTimeMillis()));
+            alert.put("event_type", "PORT_SCAN_DETECTED");
+            alert.put("details", "Detected >20 port connections in 5 seconds");
+            alert.put("nonce", "abc123");
+
+            // HMAC + encryption
+            String hmac = MessageEncryptor.computeHMAC(alert, sessionKey);
+            alert.put("hmac", hmac);
+
+            String jsonAlert = new JSONObject(alert).toString();
+            String encryptedAlert = MessageEncryptor.encrypt(jsonAlert, sessionKey);
+            output.println(encryptedAlert);
+
+            System.out.println("Alert sent securely to server.");
+
+        } catch (Exception e) {
+            System.out.println("Client error: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }
