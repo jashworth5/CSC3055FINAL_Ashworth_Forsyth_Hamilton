@@ -1,4 +1,4 @@
-package shared;
+package utils;
 
 public class Base32Decoder {
     private static final String BASE32_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";

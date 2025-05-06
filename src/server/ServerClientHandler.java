@@ -1,7 +1,7 @@
 package server;
 
 import org.json.JSONObject;
-import shared.TOTPValidator;
+import utils.TOTPValidator;
 
 import javax.crypto.SecretKey;
 import java.io.*;

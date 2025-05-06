@@ -1,4 +1,4 @@
-package shared;
+package utils;
 
 import java.time.Instant;
 import javax.crypto.Mac;

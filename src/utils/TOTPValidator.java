@@ -1,4 +1,4 @@
-package shared;
+package utils;
 
 public class TOTPValidator {
     private final String base32Secret;
