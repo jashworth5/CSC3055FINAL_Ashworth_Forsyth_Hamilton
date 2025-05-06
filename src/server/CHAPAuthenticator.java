@@ -51,4 +51,17 @@ public class CHAPAuthenticator {
         byte[] digest = md.digest(input.getBytes());
         return Base64.getEncoder().encodeToString(digest);
     }
+
+    // CHAP hash computation
+    public static String hashChallenge(String challenge, String password) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            String combined = challenge + password;
+            byte[] digest = md.digest(combined.getBytes());
+            return Base64.getEncoder().encodeToString(digest);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 not available", e);
+        }
+    }
+
 }

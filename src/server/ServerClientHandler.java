@@ -1,7 +1,6 @@
 package server;
 
 import org.json.JSONObject;
-import utils.HashUtil;
 import utils.TOTPValidator;
 
 import javax.crypto.SecretKey;
@@ -19,6 +18,7 @@ public class ServerClientHandler implements Runnable {
     private static final CHAPAuthenticator chap = new CHAPAuthenticator();
     private static final TOTPValidator totpValidator = new TOTPValidator("JBSWY3DPEHPK3PXP"); // test secret
     private static final File LOG_FILE = new File("logs/secure_log.txt");
+    private static final NonceTracker nonceTracker = new NonceTracker(); // 🆕 Added nonce tracker
 
     public ServerClientHandler(Socket socket) {
         this.socket = socket;
@@ -71,9 +71,12 @@ public class ServerClientHandler implements Runnable {
 
             out.write("TOTP verified\n"); out.flush();
 
-            // Step 5: Setup session key
+            // ✅ Step 5: Setup session key and send to client
             SessionKeyManager.generateSessionKey(username);
             SecretKey key = SessionKeyManager.getSessionKey(username);
+            String encodedKey = Base64.getEncoder().encodeToString(key.getEncoded());
+            out.write("SESSIONKEY:" + encodedKey + "\n");
+            out.flush();
 
             // Step 6: Receive encrypted alert
             String encrypted = in.readLine();
@@ -84,6 +87,17 @@ public class ServerClientHandler implements Runnable {
             String decrypted = MessageEncryptor.decrypt(encrypted, key);
             JSONObject json = new JSONObject(decrypted);
 
+            // 🆕 Nonce check
+            String nonce = json.optString("nonce");
+            if (nonce == null || nonce.isEmpty()) {
+                out.write("ERROR: Missing nonce\n"); out.flush(); return;
+            }
+            if (nonceTracker.isNonceUsed(nonce)) {
+                out.write("ERROR: Nonce already used\n"); out.flush(); return;
+            }
+            nonceTracker.addNonce(nonce); // Accept and remember this nonce
+
+            // HMAC check
             String receivedHmac = json.getString("hmac");
             json.remove("hmac");
 

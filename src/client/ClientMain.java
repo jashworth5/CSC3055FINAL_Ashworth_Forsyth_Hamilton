@@ -1,93 +1,135 @@
 package client;
 
-import org.json.JSONObject;
-import utils.HashUtil;
 import server.MessageEncryptor;
 import server.SessionKeyManager;
+import server.CHAPAuthenticator;
 
 import javax.crypto.SecretKey;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import javax.crypto.spec.SecretKeySpec;
+import java.io.*;
 import java.net.Socket;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Scanner;
+import java.time.Instant;
+import java.util.*;
 
 public class ClientMain {
-    public static void main(String[] args) {
-        System.out.println("Client started.");
 
+    public static void main(String[] args) {
         try (
-            Socket socket = new Socket("localhost", 9999);
-            BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            PrintWriter output = new PrintWriter(socket.getOutputStream(), true);
+            Socket socket = new Socket("127.0.0.1", 9999);
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             Scanner scanner = new Scanner(System.in)
         ) {
+            System.out.println("Client started.");
+
             // Step 1: Send username
             System.out.print("Welcome! Please enter your username: ");
             String username = scanner.nextLine();
-            output.println("USERNAME:" + username);
 
-            // Step 2: Receive challenge
-            String challenge = input.readLine();
-            if (challenge == null || challenge.isEmpty()) {
-                System.out.println("Server did not respond with a challenge.");
+            out.write("USERNAME:" + username + "\n");
+            out.flush();
+
+            String challenge = in.readLine();
+            if (challenge == null || challenge.trim().isEmpty()) {
+                System.err.println("Failed to receive challenge. Exiting.");
                 return;
             }
 
-            // Step 3: Password input and response
-            System.out.print("Password: ");
-            String password = scanner.nextLine();
-            String responseHash = HashUtil.hash(challenge + password);
-            output.println("RESPONSE:" + username + ":" + responseHash);
+            // Step 2: Try password authentication
+            boolean authenticated = false;
+            for (int attempts = 0; attempts <= 3; attempts++) {
+                System.out.print("Password: ");
+                String password = scanner.nextLine();
 
-            // Step 4: Read password auth result
-            String authResponse = input.readLine();
-            if (authResponse == null || !authResponse.contains("successful")) {
-                System.out.println("Server: Authentication failed or no response.");
+                String responseHash = CHAPAuthenticator.hashChallenge(challenge, password);
+                out.write("RESPONSE:" + username + ":" + responseHash + "\n");
+                out.flush();
+
+                String authReply = in.readLine();
+                if (authReply == null) {
+                    System.out.println("Server closed the connection. Exiting.");
+                    return;
+                }
+
+                System.out.println("Server: " + authReply);
+                if (authReply.contains("successful")) {
+                    authenticated = true;
+                    break;
+                }
+            }
+
+            if (!authenticated) {
+                System.out.println("Too many failed attempts. Disconnecting.");
                 return;
             }
-            System.out.println("Server: " + authResponse);
 
-            // Step 5: Send TOTP code
+            // Step 3: TOTP Verification
             System.out.print("Enter your TOTP code: ");
             String totp = scanner.nextLine();
-            output.println("TOTP:" + totp);
+            out.write("TOTP:" + totp + "\n");
+            out.flush();
 
-            // Step 6: Read TOTP response
-            String totpResponse = input.readLine();
-            if (totpResponse == null || !totpResponse.contains("TOTP verified")) {
-                System.out.println("Server: TOTP verification failed.");
+            String totpReply = in.readLine();
+            if (totpReply == null) {
+                System.out.println("Server closed the connection after TOTP. Exiting.");
                 return;
             }
-            System.out.println("Server: " + totpResponse);
 
-            // Step 7: Session key
-            SessionKeyManager.generateSessionKey(username);
-            SecretKey sessionKey = SessionKeyManager.getSessionKey(username);
+            System.out.println("Server: " + totpReply);
+            if (!totpReply.contains("verified")) return;
 
+            // Step 4: Receive session key
+            String keyLine = in.readLine();
+            if (keyLine == null || !keyLine.startsWith("SESSIONKEY:")) {
+                System.err.println("[Client] ERROR: No session key received");
+                return;
+            }
 
-            // Step 8: Create alert
-            Map<String, String> alert = new HashMap<>();
-            alert.put("timestamp", String.valueOf(System.currentTimeMillis()));
-            alert.put("event_type", "PORT_SCAN_DETECTED");
-            alert.put("details", "Detected >20 port connections in 5 seconds");
-            alert.put("nonce", "abc123");
+            String encodedKey = keyLine.substring(11).trim();
+            byte[] decoded = Base64.getDecoder().decode(encodedKey);
+            SecretKey sessionKey = new SecretKeySpec(decoded, 0, decoded.length, "AES");
+            SessionKeyManager.setSessionKey(username, sessionKey);
 
-            // HMAC + encryption
-            String hmac = MessageEncryptor.computeHMAC(alert, sessionKey);
-            alert.put("hmac", hmac);
+            // Step 5: Secure alert loop
+            String response;
+            while (true) {
+                System.out.print("Enter alert message (or 'exit'): ");
+                String message = scanner.nextLine();
+                if (message.equalsIgnoreCase("exit")) break;
 
-            String jsonAlert = new JSONObject(alert).toString();
-            String encryptedAlert = MessageEncryptor.encrypt(jsonAlert, sessionKey);
-            output.println(encryptedAlert);
+                String timestamp = Instant.now().toString();
+                String nonce = UUID.randomUUID().toString();
 
-            System.out.println("Alert sent securely to server.");
+                Map<String, String> alert = new HashMap<>();
+                alert.put("client_id", username);
+                alert.put("message", message);
+                alert.put("timestamp", timestamp);
+                alert.put("nonce", nonce);
+
+                String hmac = MessageEncryptor.computeHMAC(alert, sessionKey);
+                alert.put("hmac", hmac);
+
+                String jsonString = new org.json.JSONObject(alert).toString();
+                String encrypted = MessageEncryptor.encrypt(jsonString, sessionKey);
+
+                out.write(encrypted + "\n");
+                out.flush();
+
+                response = in.readLine();
+                if (response == null) {
+                    System.out.println("Server closed connection after sending alert. Exiting.");
+                    return;
+                }
+
+                System.out.println("Server: " + response);
+            }
+
+            System.out.println("Disconnected from server.");
 
         } catch (Exception e) {
-            System.out.println("Client error: " + e.getMessage());
-            e.printStackTrace();
+            System.err.println("Client error: " + e.getMessage());
+            // You can optionally suppress this stack trace if you want clean exit:
+            // e.printStackTrace();
         }
     }
 }
