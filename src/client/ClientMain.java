@@ -1,11 +1,5 @@
 package client;
 
-import org.json.JSONObject;
-import utils.HashUtil;
-import server.MessageEncryptor;
-import server.SessionKeyManager;
-
-import javax.crypto.SecretKey;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -13,6 +7,14 @@ import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
+
+import javax.crypto.SecretKey;
+
+import org.json.JSONObject;
+
+import server.MessageEncryptor;
+import server.SessionKeyManager;
+import utils.HashUtil;
 
 public class ClientMain {
     public static void main(String[] args) {
