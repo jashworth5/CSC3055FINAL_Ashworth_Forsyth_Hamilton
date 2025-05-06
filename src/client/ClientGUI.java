@@ -14,6 +14,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.*;
+import java.util.List;
+
 
 public class ClientGUI extends JFrame {
 
@@ -81,6 +83,17 @@ public class ClientGUI extends JFrame {
         return panel;
     }
 
+    private void showPorts() {
+        List<PortEntry> ports = PortScanner.scanOpenPorts();
+        log("Open Ports:");
+        for (PortEntry entry : ports) {
+            log(" - " + entry.toString());
+        }
+        if (ports.isEmpty()) {
+            log("No listening ports detected.");
+        }
+    }
+
     private JPanel createAlertScreen() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
 
@@ -100,6 +113,10 @@ public class ClientGUI extends JFrame {
         JButton sendButton = new JButton("Send");
         inputPanel.add(sendButton);
         sendButton.addActionListener(e -> sendAlert());
+
+        JButton scanButton = new JButton("Scan Ports");
+        scanButton.addActionListener(e -> showPorts());
+        inputPanel.add(scanButton);
 
         panel.add(inputPanel, BorderLayout.SOUTH);
         return panel;
