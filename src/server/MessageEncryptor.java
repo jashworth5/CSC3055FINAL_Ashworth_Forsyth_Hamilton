@@ -1,50 +1,82 @@
 package server;
 
+import org.json.JSONObject;
+
+import javax.crypto.Cipher;
+import javax.crypto.KeyGenerator;
+import javax.crypto.Mac;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Map;
 
-import javax.crypto.Cipher;
-import javax.crypto.Mac;
-import javax.crypto.SecretKey;
-import javax.crypto.spec.GCMParameterSpec;
-
-import org.json.JSONObject;
-
 public class MessageEncryptor {
-    private static final int GCM_TAG_LENGTH = 128;
 
-    public static String encrypt(String plainText, SecretKey key) throws Exception {
+    private static final int GCM_IV_LENGTH = 12;    // 12 bytes = 96 bits
+    private static final int GCM_TAG_LENGTH = 128;  // in bits
+
+    //AES-GCM Encryption
+    public static String encrypt(String plaintext, SecretKey key) throws Exception {
         Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
-        byte[] iv = new byte[12];
-        new SecureRandom().nextBytes(iv);
+
+        byte[] iv = new byte[GCM_IV_LENGTH];
+        SecureRandom random = new SecureRandom();
+        random.nextBytes(iv);
+
         GCMParameterSpec spec = new GCMParameterSpec(GCM_TAG_LENGTH, iv);
         cipher.init(Cipher.ENCRYPT_MODE, key, spec);
-        byte[] encrypted = cipher.doFinal(plainText.getBytes());
-        byte[] combined = new byte[iv.length + encrypted.length];
-        System.arraycopy(iv, 0, combined, 0, iv.length);
-        System.arraycopy(encrypted, 0, combined, iv.length, encrypted.length);
-        return Base64.getEncoder().encodeToString(combined);
+
+        byte[] ciphertext = cipher.doFinal(plaintext.getBytes(StandardCharsets.UTF_8));
+
+        // Prepend IV to ciphertext
+        ByteBuffer buffer = ByteBuffer.allocate(iv.length + ciphertext.length);
+        buffer.put(iv);
+        buffer.put(ciphertext);
+        return Base64.getEncoder().encodeToString(buffer.array());
     }
 
-    public static String decrypt(String cipherText, SecretKey key) throws Exception {
-        byte[] combined = Base64.getDecoder().decode(cipherText);
-        byte[] iv = new byte[12];
-        byte[] encrypted = new byte[combined.length - 12];
-        System.arraycopy(combined, 0, iv, 0, 12);
-        System.arraycopy(combined, 12, encrypted, 0, encrypted.length);
+    // AES-GCM Decryption
+    public static String decrypt(String encryptedBase64, SecretKey key) throws Exception {
+        byte[] input = Base64.getDecoder().decode(encryptedBase64);
+        ByteBuffer buffer = ByteBuffer.wrap(input);
+
+        byte[] iv = new byte[GCM_IV_LENGTH];
+        buffer.get(iv);
+        byte[] ciphertext = new byte[buffer.remaining()];
+        buffer.get(ciphertext);
+
         Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
         GCMParameterSpec spec = new GCMParameterSpec(GCM_TAG_LENGTH, iv);
         cipher.init(Cipher.DECRYPT_MODE, key, spec);
-        byte[] decrypted = cipher.doFinal(encrypted);
-        return new String(decrypted);
+
+        byte[] decryptedBytes = cipher.doFinal(ciphertext);
+        return new String(decryptedBytes, StandardCharsets.UTF_8);
     }
 
-    public static String computeHMAC(Map<String, String> data, SecretKey key) throws Exception {
+    // Compute HMAC (SHA-256) over JSON map
+    public static String computeHMAC(Map<String, String> fields, SecretKey key) throws Exception {
         Mac mac = Mac.getInstance("HmacSHA256");
         mac.init(key);
-        String json = new JSONObject(data).toString();
-        byte[] hmac = mac.doFinal(json.getBytes());
-        return Base64.getEncoder().encodeToString(hmac);
+
+        // Create a canonical string representation of fields
+        StringBuilder sb = new StringBuilder();
+        fields.keySet().stream().sorted().forEach(k -> {
+            sb.append(k).append("=").append(fields.get(k)).append("&");
+        });
+
+        byte[] hmacBytes = mac.doFinal(sb.toString().getBytes(StandardCharsets.UTF_8));
+        StringBuilder hex = new StringBuilder();
+        for (byte b : hmacBytes) hex.append(String.format("%02x", b));
+        return hex.toString();
+    }
+
+    public static SecretKey generateAESKey() throws Exception {
+        KeyGenerator generator = KeyGenerator.getInstance("AES");
+        generator.init(256); // AES-256
+        return generator.generateKey();
     }
 }

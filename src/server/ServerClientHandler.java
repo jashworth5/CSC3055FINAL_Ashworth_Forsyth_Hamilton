@@ -87,7 +87,6 @@ public class ServerClientHandler implements Runnable {
             String receivedHmac = json.getString("hmac");
             json.remove("hmac");
 
-            // ✅ Use helper method to convert map to Map<String, String>
             String computedHmac = MessageEncryptor.computeHMAC(toStringMap(json.toMap()), key);
 
             if (!receivedHmac.equals(computedHmac)) {
@@ -106,7 +105,6 @@ public class ServerClientHandler implements Runnable {
         }
     }
 
-    // ✅ Helper to convert Map<String, Object> to Map<String, String>
     private static Map<String, String> toStringMap(Map<String, Object> input) {
         Map<String, String> output = new HashMap<>();
         for (Map.Entry<String, Object> entry : input.entrySet()) {

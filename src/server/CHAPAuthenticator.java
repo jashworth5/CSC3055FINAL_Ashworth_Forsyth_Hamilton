@@ -12,8 +12,8 @@ public class CHAPAuthenticator {
 
     public CHAPAuthenticator() {
         // Demo credentials (should load from file/db in real use)
-        userPasswords.put("alice", "password123");
-        userPasswords.put("bob", "secure456");
+        userPasswords.put("alice", "123");
+        userPasswords.put("bob", "456");
     }
 
     public String generateChallenge(String username) {
@@ -22,7 +22,6 @@ public class CHAPAuthenticator {
         return challenge;
     }
 
-    // You can call this to get the expected hash server-side
     public String getExpectedHash(String username, String password) throws NoSuchAlgorithmException {
         String challenge = activeChallenges.get(username);
         if (challenge == null) return null;

@@ -1,8 +1,8 @@
 client\ClientMain.java
-shared\Base32Decoder.java
-shared\TOTPTest.java
-shared\TOTPUtil.java
-shared\TOTPValidator.java
+utils\Base32Decoder.java
+utils\TOTPTest.java
+utils\TOTPUtil.java
+utils\TOTPValidator.java
 server\CHAPAuthenticator.java
 server\MessageEncryptor.java
 server\NonceTracker.java
