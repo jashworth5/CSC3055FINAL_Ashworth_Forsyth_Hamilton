@@ -36,6 +36,13 @@ public class CHAPAuthenticator {
             if (password == null || challenge == null) return false;
 
             String expected = hash(challenge + password);
+
+            // TEMP DEBUG
+            System.out.println("[CHAP] Challenge: " + challenge);
+            System.out.println("[CHAP] Password: " + password);
+            System.out.println("[CHAP] Expected: " + expected);
+            System.out.println("[CHAP] Received: " + clientHash);
+
             return expected.equals(clientHash);
         } catch (Exception e) {
             e.printStackTrace();
