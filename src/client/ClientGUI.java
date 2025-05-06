@@ -10,6 +10,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.*;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.*;
 
@@ -24,6 +26,9 @@ public class ClientGUI extends JFrame {
 
     private JTextField alertField = new JTextField(30);
     private JTextArea logArea = new JTextArea(15, 40);
+
+    private static final File LOG_FILE = new File("client-secure-log.txt");
+    private static final File LOGIN_HISTORY_FILE = new File("logs/login_history.txt");
 
     private Socket socket;
     private BufferedReader in;
@@ -102,60 +107,76 @@ public class ClientGUI extends JFrame {
 
     private void handleLogin() {
         String username = usernameField.getText().trim();
-        String password = new String(passwordField.getPassword()).trim();
         String totp = totpField.getText().trim();
 
-        if (username.isEmpty() || password.isEmpty() || totp.isEmpty()) {
+        if (username.isEmpty() || totp.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Please fill in all fields.", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        try {
-            socket = new Socket("127.0.0.1", 9999);
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+        int attempts = 0;
+        boolean success = false;
 
-            out.write("USERNAME:" + username + "\n");
-            out.flush();
+        while (attempts < 3 && !success) {
+            String password = new String(passwordField.getPassword()).trim();
+            attempts++;
 
-            String challenge = in.readLine();
-            String responseHash = CHAPAuthenticator.hashChallenge(challenge, password);
-            out.write("RESPONSE:" + username + ":" + responseHash + "\n");
-            out.flush();
+            try {
+                socket = new Socket("127.0.0.1", 9999);
+                in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
 
-            String authReply = in.readLine();
-            if (!authReply.contains("successful")) {
-                log("Server: " + authReply);
-                socket.close();
-                return;
+                out.write("USERNAME:" + username + "\n");
+                out.flush();
+
+                String challenge = in.readLine();
+                String responseHash = CHAPAuthenticator.hashChallenge(challenge, password);
+                out.write("RESPONSE:" + username + ":" + responseHash + "\n");
+                out.flush();
+
+                String authReply = in.readLine();
+                if (!authReply.contains("successful")) {
+                    log("Server: " + authReply);
+                    socket.close();
+                    logLoginAttempt(username, false);
+                    continue;
+                }
+
+                out.write("TOTP:" + totp + "\n");
+                out.flush();
+
+                String totpReply = in.readLine();
+                if (!totpReply.contains("verified")) {
+                    log("Server: " + totpReply);
+                    socket.close();
+                    logLoginAttempt(username, false);
+                    continue;
+                }
+
+                String keyLine = in.readLine();
+                if (keyLine == null || !keyLine.startsWith("SESSIONKEY:")) {
+                    log("Failed to receive session key.");
+                    socket.close();
+                    logLoginAttempt(username, false);
+                    continue;
+                }
+
+                byte[] decoded = Base64.getDecoder().decode(keyLine.substring(11).trim());
+                sessionKey = new SecretKeySpec(decoded, 0, decoded.length, "AES");
+                SessionKeyManager.setSessionKey(username, sessionKey);
+
+                log("Login successful. You can now send secure alerts.");
+                logLoginAttempt(username, true);
+                cardLayout.show(mainPanel, "alert");
+                success = true;
+            } catch (Exception ex) {
+                log("Login error: " + ex.getMessage());
+                logLoginAttempt(username, false);
             }
+        }
 
-            out.write("TOTP:" + totp + "\n");
-            out.flush();
-
-            String totpReply = in.readLine();
-            if (!totpReply.contains("verified")) {
-                log("Server: " + totpReply);
-                socket.close();
-                return;
-            }
-
-            String keyLine = in.readLine();
-            if (keyLine == null || !keyLine.startsWith("SESSIONKEY:")) {
-                log("Failed to receive session key.");
-                socket.close();
-                return;
-            }
-
-            byte[] decoded = Base64.getDecoder().decode(keyLine.substring(11).trim());
-            sessionKey = new SecretKeySpec(decoded, 0, decoded.length, "AES");
-            SessionKeyManager.setSessionKey(username, sessionKey);
-
-            log("Login successful.");
-            cardLayout.show(mainPanel, "alert");
-
-        } catch (Exception ex) {
-            log("Login error: " + ex.getMessage());
+        if (!success) {
+            JOptionPane.showMessageDialog(this, "Login failed after 3 attempts.", "Login Failed", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -183,6 +204,7 @@ public class ClientGUI extends JFrame {
 
             String response = in.readLine();
             log("Server: " + response);
+            logSecure(message);
             alertField.setText("");
         } catch (Exception ex) {
             log("Error: " + ex.getMessage());
@@ -191,6 +213,43 @@ public class ClientGUI extends JFrame {
 
     private void log(String msg) {
         logArea.append(msg + "\n");
+    }
+
+    private void logSecure(String message) throws Exception {
+        String prevHash = "0";
+
+        if (LOG_FILE.exists()) {
+            String last = null;
+            try (BufferedReader r = new BufferedReader(new FileReader(LOG_FILE))) {
+                String line;
+                while ((line = r.readLine()) != null) last = line;
+            }
+            if (last != null && last.contains("||")) {
+                prevHash = last.split("\\|\\|")[1];
+            }
+        }
+
+        String combined = message + prevHash;
+        String newHash = hash(combined);
+
+        try (BufferedWriter w = new BufferedWriter(new FileWriter(LOG_FILE, true))) {
+            w.write(message + "||" + newHash + "\n");
+        }
+    }
+
+    private void logLoginAttempt(String username, boolean success) {
+        String timestamp = Instant.now().toString();
+        String status = success ? "SUCCESS" : "FAILURE";
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(LOGIN_HISTORY_FILE, true))) {
+            writer.write(timestamp + " - " + username + " - " + status + "\n");
+        } catch (IOException e) {
+            log("Failed to write login history.");
+        }
+    }
+
+    private String hash(String input) throws Exception {
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        return Base64.getEncoder().encodeToString(md.digest(input.getBytes(StandardCharsets.UTF_8)));
     }
 
     public static void main(String[] args) {
