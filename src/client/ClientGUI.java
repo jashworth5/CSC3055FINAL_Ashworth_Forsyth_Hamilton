@@ -118,6 +118,13 @@ public class ClientGUI extends JFrame {
         scanButton.addActionListener(e -> showPorts());
         inputPanel.add(scanButton);
 
+        JButton portScanButton = new JButton("Send Port Report");
+        portScanButton.addActionListener(e -> 
+            PortReporter.sendPortReport(usernameField.getText().trim(), out, in, logArea)
+        );
+        inputPanel.add(portScanButton);
+
+
         panel.add(inputPanel, BorderLayout.SOUTH);
         return panel;
     }

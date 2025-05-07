@@ -107,9 +107,20 @@ public class ServerClientHandler implements Runnable {
                 out.write("ERROR: Invalid HMAC\n"); out.flush(); return;
             }
 
-            out.write("Alert received securely\n"); out.flush();
-            System.out.println("[Server] Secure alert from " + username + ": " + decrypted);
-            logSecure(decrypted);
+            String eventType = json.optString("event_type");
+            if ("PORT_SCAN_RESULT".equals(eventType)) {
+                String ports = json.optString("ports", "No port data provided.");
+                System.out.println("[Server] PORT SCAN REPORT from " + username + ":\n" + ports);
+
+                JSONObject verdict = new JSONObject();
+                verdict.put("verdict", "Ports OK"); // In future: apply heuristics or compare to a whitelist
+                String encryptedResponse = MessageEncryptor.encrypt(verdict.toString(), key);
+                out.write(encryptedResponse + "\n"); out.flush();
+            } else {
+                out.write("Alert received securely\n"); out.flush();
+                System.out.println("[Server] Secure alert from " + username + ": " + decrypted);
+                logSecure(decrypted);
+            }
 
         } catch (Exception e) {
             System.err.println("[Server] Handler error: " + e.getMessage());
