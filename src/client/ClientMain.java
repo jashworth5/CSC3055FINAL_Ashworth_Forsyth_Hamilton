@@ -90,46 +90,67 @@ public class ClientMain {
             SecretKey sessionKey = new SecretKeySpec(decoded, 0, decoded.length, "AES");
             SessionKeyManager.setSessionKey(username, sessionKey);
 
-            // Step 5: Secure alert loop
-            String response;
+            // Step 5: Action menu
+            System.out.println("\n========= Client Action Menu =========");
             while (true) {
-                System.out.print("Enter alert message (or 'exit'): ");
-                String message = scanner.nextLine();
-                if (message.equalsIgnoreCase("exit")) break;
+                System.out.println("\nSelect an action:");
+                System.out.println("[1] Send custom alert");
+                System.out.println("[2] Port scan (local only, print result)");
+                System.out.println("[3] Port scan and report to server");
+                System.out.println("[0] Exit");
+                System.out.print("> ");
+                String choice = scanner.nextLine();
 
-                String timestamp = Instant.now().toString();
-                String nonce = UUID.randomUUID().toString();
+                if (choice.equals("0")) {
+                    System.out.println("[Client] Exiting...");
+                    break;
 
-                Map<String, String> alert = new HashMap<>();
-                alert.put("client_id", username);
-                alert.put("message", message);
-                alert.put("timestamp", timestamp);
-                alert.put("nonce", nonce);
+                } else if (choice.equals("1")) {
+                    System.out.print("Enter alert message: ");
+                    String message = scanner.nextLine();
 
-                String hmac = MessageEncryptor.computeHMAC(alert, sessionKey);
-                alert.put("hmac", hmac);
+                    String timestamp = Instant.now().toString();
+                    String nonce = UUID.randomUUID().toString();
 
-                String jsonString = new org.json.JSONObject(alert).toString();
-                String encrypted = MessageEncryptor.encrypt(jsonString, sessionKey);
+                    Map<String, String> alert = new LinkedHashMap<>();
+                    alert.put("client_id", username);
+                    alert.put("message", message);
+                    alert.put("timestamp", timestamp);
+                    alert.put("nonce", nonce);
 
-                out.write(encrypted + "\n");
-                out.flush();
+                    String hmac = MessageEncryptor.computeHMAC(alert, sessionKey);
+                    alert.put("hmac", hmac);
 
-                response = in.readLine();
-                if (response == null) {
-                    System.out.println("Server closed connection after sending alert. Exiting.");
-                    return;
+                    String jsonString = new org.json.JSONObject(alert).toString();
+                    String encrypted = MessageEncryptor.encrypt(jsonString, sessionKey);
+
+                    out.write(encrypted + "\n");
+                    out.flush();
+
+                    String response = in.readLine();
+                    System.out.println("[Server Response] " + response);
+
+                } else if (choice.equals("2")) {
+                    System.out.println("[Port Scan] Local results:");
+                    List<PortEntry> ports = PortScanner.scanOpenPorts();
+                    for (PortEntry port : ports) {
+                        System.out.printf(" - Port %d (%s) - %s%n",
+                            port.getPort(), port.getProtocol(), port.getProcess());
+                    }
+
+                } else if (choice.equals("3")) {
+                    System.out.println("[Client] Starting port scan and sending encrypted report...");
+                    PortReporter.sendPortReport(username, out, in, null);
+                } else {
+                    System.out.println("Invalid choice. Try again.");
                 }
-
-                System.out.println("Server: " + response);
             }
 
             System.out.println("Disconnected from server.");
 
         } catch (Exception e) {
             System.err.println("Client error: " + e.getMessage());
-            // You can optionally suppress this stack trace if you want clean exit:
-            // e.printStackTrace();
+            e.printStackTrace();
         }
     }
 }
