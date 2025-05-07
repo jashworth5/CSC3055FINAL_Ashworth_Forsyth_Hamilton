@@ -5,6 +5,8 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.FileReader;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import org.json.JSONTokener;
@@ -42,11 +44,39 @@ public class PortAnalyzer {
         }
     }
 
+    private void detectForkBomb(List<PortEntry> entries, JSONObject groupedJson) {
+
+        // Group timestamps
+        Map<Instant, List<PortEntry>> bySecond = new HashMap<>();
+
+        for (PortEntry e : entries) {
+            Instant secondBucket = e.getTimestamp().truncatedTo(ChronoUnit.SECONDS);
+            bySecond.computeIfAbsent(secondBucket, k -> new ArrayList<>()).add(e);
+        }
+
+        // Look for any second where >= 8 new unique ports started listening
+        for (Map.Entry<Instant, List<PortEntry>> entry : bySecond.entrySet()) {
+            long uniquePorts = entry.getValue().stream()
+                .map(PortEntry::getPort)
+                .distinct()
+                .count();
+
+            if (uniquePorts >= 8) {
+                String msg = "⚠️  Potential fork bomb detected: " + uniquePorts +
+                            " unique ports opened at " + entry.getKey().toString();
+                groupedJson.put("forkbomb", msg);
+                SecureAlertSender.sendAlert(msg);
+                break;
+            }
+        }
+    }
+
+
     public JSONObject analyzeAndGroup(List<PortEntry> ports) {
         JSONArray whitelistArray = new JSONArray();
         JSONArray suspiciousArray = new JSONArray();
         JSONArray blacklistArray = new JSONArray();
-
+    
         for (PortEntry entry : ports) {
             int port = entry.getPort();
             String process = entry.getProcess().toLowerCase();
@@ -54,7 +84,7 @@ public class PortAnalyzer {
                     .put("port", port)
                     .put("protocol", entry.getProtocol())
                     .put("process", entry.getProcess());
-
+    
             if (blacklistedPorts.contains(port) || blacklistedProcesses.contains(process)) {
                 blacklistArray.put(jsonEntry);
                 SecureAlertSender.sendAlert("CODE RED: " + port + " (" + entry.getProtocol() + ") by " + entry.getProcess());
@@ -65,11 +95,18 @@ public class PortAnalyzer {
                 SecureAlertSender.sendAlert("SUSPICIOUS: " + port + " (" + entry.getProtocol() + ") by " + entry.getProcess());
             }
         }
-
+    
+    
+        // Build final result object
         JSONObject grouped = new JSONObject();
         grouped.put("whitelisted", whitelistArray);
         grouped.put("suspicious", suspiciousArray);
         grouped.put("blacklisted", blacklistArray);
+    
+        // Detect fork bomb
+        detectForkBomb(ports, grouped);
+    
         return grouped;
     }
+    
 }

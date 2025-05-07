@@ -92,6 +92,11 @@ public class PortReporter {
                     logArea.append(" ⚠️  WARNING: Process '" + process + "' on port " + port + " should be terminated immediately.\n\n");
                 }
 
+                String forkWarning = json.optString("forkbomb", null);
+                if (forkWarning != null && !forkWarning.isEmpty()) {
+                    logArea.append("\n" + forkWarning + "\n");
+                }
+
                 logArea.append("\n===========================\n\n");
             }
 
