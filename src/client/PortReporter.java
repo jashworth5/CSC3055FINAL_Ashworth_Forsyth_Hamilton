@@ -9,16 +9,16 @@ import server.SessionKeyManager;
 
 import javax.crypto.SecretKey;
 import javax.swing.*;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
+import java.io.*;
 import java.time.Instant;
 import java.util.*;
 
 public class PortReporter {
 
+    private static final File REPORT_LOG = new File("logs/port_report_log.txt");
+
     public static void sendPortReport(String clientId, BufferedWriter out, BufferedReader in, JTextArea logArea) {
         try {
-            // 1. Scan open ports
             List<PortEntry> openPorts = PortScanner.scanOpenPorts();
             JSONArray portsArray = new JSONArray();
 
@@ -30,7 +30,6 @@ public class PortReporter {
                 portsArray.put(portJson);
             }
 
-            // 2. Build top-level JSON structure
             String timestamp = Instant.now().toString();
             String nonce = UUID.randomUUID().toString();
 
@@ -39,26 +38,34 @@ public class PortReporter {
             payload.put("timestamp", timestamp);
             payload.put("nonce", nonce);
             payload.put("ports", portsArray);
+            payload.put("event_type", "PORT_SCAN_RESULT");
 
-            // 3. Compute HMAC
             SecretKey sessionKey = SessionKeyManager.getSessionKey(clientId);
-            String hmac = MessageEncryptor.computeHMAC(toStringMap(payload), sessionKey);
+            Map<String, String> forHmac = new HashMap<>();
+            forHmac.put("client_id", clientId);
+            forHmac.put("timestamp", timestamp);
+            forHmac.put("nonce", nonce);
+            forHmac.put("ports", portsArray.toString());
+            String hmac = MessageEncryptor.computeHMAC(forHmac, sessionKey);
             payload.put("hmac", hmac);
 
-            // 4. Encrypt the full JSON
             String encrypted = MessageEncryptor.encrypt(payload.toString(), sessionKey);
-
-            // 5. Send encrypted blob
             out.write(encrypted + "\n");
             out.flush();
 
             logArea.append("[PortReporter] Sent port report to server.\n");
+            logPortReport(clientId, timestamp, portsArray.toString());
 
-            // 6. Handle server response
             String response = in.readLine();
             if (response != null && !response.trim().isEmpty()) {
-                String verdict = MessageEncryptor.decrypt(response, sessionKey);
-                logArea.append("[Server Verdict] " + verdict + "\n");
+                String decrypted = MessageEncryptor.decrypt(response, sessionKey);
+                JSONObject result = new JSONObject(decrypted);
+                if (result.has("report")) {
+                    String report = result.getString("report");
+                    logArea.append("[Server Analysis]\n" + report + "\n");
+                } else {
+                    logArea.append("[Server Response] " + decrypted + "\n");
+                }
             }
 
         } catch (Exception e) {
@@ -66,18 +73,14 @@ public class PortReporter {
         }
     }
 
-    // Helper to convert JSON to Map<String, String> for HMAC
-    private static Map<String, String> toStringMap(JSONObject obj) {
-        Map<String, String> result = new HashMap<>();
-        for (String key : obj.keySet()) {
-            Object value = obj.get(key);
-            if (value instanceof JSONArray) {
-                result.put(key, value.toString()); // flatten array as string for HMAC
-            } else {
-                result.put(key, String.valueOf(value));
+    private static void logPortReport(String clientId, String timestamp, String ports) {
+        try {
+            REPORT_LOG.getParentFile().mkdirs();
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(REPORT_LOG, true))) {
+                writer.write("[" + timestamp + "] " + clientId + " PORT REPORT:\n" + ports + "\n\n");
             }
+        } catch (IOException e) {
+            System.err.println("[PortReporter] Failed to write to port report log: " + e.getMessage());
         }
-        return result;
     }
 }
-

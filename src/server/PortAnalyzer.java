@@ -7,32 +7,35 @@ import client.PortEntry;
 public class PortAnalyzer {
 
     private static final int HIGH_PORT_THRESHOLD = 1024;
-    private static final int PORT_FLOOD_THRESHOLD = 15; // number of ports
+    private static final int PORT_FLOOD_THRESHOLD = 15;
     private static final int TIME_WINDOW_SECONDS = 60;
 
-    private final Set<Integer> allowedPorts = Set.of(22, 80, 443, 3306, 9999); // Add more as needed
+    private final Set<Integer> allowedPorts = Set.of(22, 80, 443, 3306, 9999);
     private final Set<String> allowedProcesses = Set.of("java", "mysqld", "nginx", "sshd", "httpd");
 
-    public PortAnalyzer() {
-        // Optionally load dynamic config here
-    }
+    private final List<String> alerts = new ArrayList<>();
 
-    public void analyze(List<PortEntry> portData) {
+    public PortAnalyzer() {}
+
+    public String analyze(List<PortEntry> portData) {
+        alerts.clear();
         if (portData == null || portData.isEmpty()) {
-            System.out.println("[Analyzer] No port data to analyze.");
-            return;
+            alerts.add("[Analyzer] No port data to analyze.");
+            return formatReport();
         }
 
         detectUnusualActivity(portData);
         detectUnauthorizedPorts(portData);
         detectPortFlood(portData);
+
+        return formatReport();
     }
 
     private void detectUnusualActivity(List<PortEntry> entries) {
         for (PortEntry entry : entries) {
             if (entry.getPort() > HIGH_PORT_THRESHOLD) {
                 String msg = "High-numbered port in use: " + entry.getPort() + " by " + entry.getProcess();
-                System.out.println("[Analyzer] " + msg);
+                alerts.add(msg);
                 SecureAlertSender.sendAlert(msg);
             }
         }
@@ -44,7 +47,7 @@ public class PortAnalyzer {
                 allowedProcesses.stream().noneMatch(proc -> entry.getProcess().toLowerCase().contains(proc))) {
                 String msg = "Unauthorized port detected: " + entry.getPort() +
                              " (" + entry.getProtocol() + ") by " + entry.getProcess();
-                System.out.println("[Analyzer] " + msg);
+                alerts.add(msg);
                 SecureAlertSender.sendAlert(msg);
             }
         }
@@ -55,7 +58,7 @@ public class PortAnalyzer {
         Map<Integer, Long> portOpenTimes = new HashMap<>();
 
         for (PortEntry entry : entries) {
-            portOpenTimes.put(entry.getPort(), currentTime); // Ideally use real timestamps if available
+            portOpenTimes.put(entry.getPort(), currentTime);
         }
 
         long count = portOpenTimes.values().stream()
@@ -64,8 +67,12 @@ public class PortAnalyzer {
 
         if (count >= PORT_FLOOD_THRESHOLD) {
             String msg = "Potential port flood detected: " + count + " ports opened within last " + TIME_WINDOW_SECONDS + "s.";
-            System.out.println("[Analyzer] " + msg);
+            alerts.add(msg);
             SecureAlertSender.sendAlert(msg);
         }
+    }
+
+    private String formatReport() {
+        return String.join("\n", alerts);
     }
 }

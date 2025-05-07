@@ -11,12 +11,15 @@ import java.security.MessageDigest;
 import java.time.Instant;
 import java.util.*;
 
+import client.PortEntry;
+import client.PortScanner;
+
 public class ServerClientHandler implements Runnable {
     private final Socket socket;
     private String username;
 
     private static final CHAPAuthenticator chap = new CHAPAuthenticator();
-    private static final TOTPValidator totpValidator = new TOTPValidator("JBSWY3DPEHPK3PXP"); // test secret
+    private static final TOTPValidator totpValidator = new TOTPValidator("JBSWY3DPEHPK3PXP");
     private static final File LOG_FILE = new File("logs/secure_log.txt");
     private static final File PORT_LOG_FILE = new File("logs/port_scan_log.txt");
     private static final File PORT_REPORT_LOG = new File("logs/port_report_log.txt");
@@ -117,27 +120,26 @@ public class ServerClientHandler implements Runnable {
                     System.out.println("[Server] PORT SCAN REPORT from " + username + ":\n" + ports);
                     logRawPortReport(username, json.optString("timestamp"), ports);
 
-                    String[] lines = ports.split("\n");
-                    Set<String> trustedPorts = Set.of("22", "80", "443", "3306");
-                    Set<String> trustedProcesses = Set.of("sshd", "nginx", "httpd", "mysqld");
+                    // Analyze the ports and return results
+                    List<PortEntry> entries = new ArrayList<>();
+                    json.optJSONArray("ports").forEach(obj -> {
+                        if (obj instanceof JSONObject portJson) {
+                            int port = portJson.optInt("port", -1);
+                            String proto = portJson.optString("protocol", "");
+                            String proc = portJson.optString("process", "");
+                            entries.add(new PortEntry(port, proto, proc, portJson.toString()));
+                        }
+                    });
 
-                    List<String> suspicious = new ArrayList<>();
-                    for (String portLine : lines) {
-                        boolean trusted = trustedPorts.stream().anyMatch(portLine::contains) &&
-                                          trustedProcesses.stream().anyMatch(p -> portLine.toLowerCase().contains(p));
-                        if (!trusted) suspicious.add(portLine);
-                    }
+                    PortAnalyzer analyzer = new PortAnalyzer();
+                    String report = analyzer.analyze(entries);
 
-                    String verdictMessage = suspicious.isEmpty() ?
-                        "Ports OK" :
-                        "⚠ Suspicious ports detected:\n" + String.join("\n", suspicious);
-
-                    JSONObject verdict = new JSONObject();
-                    verdict.put("verdict", verdictMessage);
-                    String encryptedResponse = MessageEncryptor.encrypt(verdict.toString(), key);
+                    JSONObject responseJson = new JSONObject();
+                    responseJson.put("report", report);
+                    String encryptedResponse = MessageEncryptor.encrypt(responseJson.toString(), key);
                     out.write(encryptedResponse + "\n"); out.flush();
 
-                    logPortScanSecure(username, ports, verdictMessage);
+                    logPortScanSecure(username, ports, report);
                 } else {
                     String ackMessage = "Alert received securely";
                     String encryptedAck = MessageEncryptor.encrypt(ackMessage, key);
