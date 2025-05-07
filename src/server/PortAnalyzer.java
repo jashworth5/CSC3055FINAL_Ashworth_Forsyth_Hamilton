@@ -1,22 +1,22 @@
 package server;
 
-import java.util.List;
-import java.util.Map;
-
+import java.util.*;
+import java.util.stream.Collectors;
 import client.PortEntry;
 
 public class PortAnalyzer {
 
-    private static final int HIGH_PORT_THRESHOLD = 1024; // example criteria
+    private static final int HIGH_PORT_THRESHOLD = 1024;
+    private static final int PORT_FLOOD_THRESHOLD = 15; // number of ports
+    private static final int TIME_WINDOW_SECONDS = 60;
+
+    private final Set<Integer> allowedPorts = Set.of(22, 80, 443, 3306, 9999); // Add more as needed
+    private final Set<String> allowedProcesses = Set.of("java", "mysqld", "nginx", "sshd", "httpd");
 
     public PortAnalyzer() {
-        // Initialize any state or load config here
+        // Optionally load dynamic config here
     }
 
-    /**
-     * Entry point to analyze raw port data from the scanner.
-     * @param portData List of parsed port entries from PortScanner
-     */
     public void analyze(List<PortEntry> portData) {
         if (portData == null || portData.isEmpty()) {
             System.out.println("[Analyzer] No port data to analyze.");
@@ -28,30 +28,44 @@ public class PortAnalyzer {
         detectPortFlood(portData);
     }
 
-    /**
-     * Detects if a flood of ports (e.g., too many new ports opened quickly) is occurring.
-     */
-    private void detectPortFlood(List<PortEntry> entries) {
-        // TODO: Check if more than N ports were opened in M seconds
-    }
-
-    /**
-     * Compares active ports to a whitelist of allowed ports.
-     */
-    private void detectUnauthorizedPorts(List<PortEntry> entries) {
-        // TODO: Load from config and compare
-    }
-
-    /**
-     * Flags activity like uncommon service ports, high-range ports, etc.
-     */
     private void detectUnusualActivity(List<PortEntry> entries) {
         for (PortEntry entry : entries) {
-            int port = entry.getPort();
-            if (port > HIGH_PORT_THRESHOLD) {
-                System.out.println("[Analyzer] High-numbered port in use: " + port);
-                // TODO: Maybe flag or send alert via AlertSender
+            if (entry.getPort() > HIGH_PORT_THRESHOLD) {
+                String msg = "High-numbered port in use: " + entry.getPort() + " by " + entry.getProcess();
+                System.out.println("[Analyzer] " + msg);
+                SecureAlertSender.sendAlert(msg);
             }
+        }
+    }
+
+    private void detectUnauthorizedPorts(List<PortEntry> entries) {
+        for (PortEntry entry : entries) {
+            if (!allowedPorts.contains(entry.getPort()) &&
+                allowedProcesses.stream().noneMatch(proc -> entry.getProcess().toLowerCase().contains(proc))) {
+                String msg = "Unauthorized port detected: " + entry.getPort() +
+                             " (" + entry.getProtocol() + ") by " + entry.getProcess();
+                System.out.println("[Analyzer] " + msg);
+                SecureAlertSender.sendAlert(msg);
+            }
+        }
+    }
+
+    private void detectPortFlood(List<PortEntry> entries) {
+        long currentTime = System.currentTimeMillis();
+        Map<Integer, Long> portOpenTimes = new HashMap<>();
+
+        for (PortEntry entry : entries) {
+            portOpenTimes.put(entry.getPort(), currentTime); // Ideally use real timestamps if available
+        }
+
+        long count = portOpenTimes.values().stream()
+                .filter(ts -> (currentTime - ts) <= TIME_WINDOW_SECONDS * 1000L)
+                .count();
+
+        if (count >= PORT_FLOOD_THRESHOLD) {
+            String msg = "Potential port flood detected: " + count + " ports opened within last " + TIME_WINDOW_SECONDS + "s.";
+            System.out.println("[Analyzer] " + msg);
+            SecureAlertSender.sendAlert(msg);
         }
     }
 }
