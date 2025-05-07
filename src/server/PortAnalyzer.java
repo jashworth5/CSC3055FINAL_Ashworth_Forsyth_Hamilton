@@ -1,75 +1,91 @@
 package server;
 
-import java.util.*;
-import java.util.stream.Collectors;
 import client.PortEntry;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.json.JSONTokener;
+
+import java.io.File;
+import java.io.FileReader;
+import java.util.*;
 
 public class PortAnalyzer {
 
-    private static final int HIGH_PORT_THRESHOLD = 1024;
-    private static final int PORT_FLOOD_THRESHOLD = 15;
-    private static final int TIME_WINDOW_SECONDS = 60;
-
-    private final Set<Integer> allowedPorts = Set.of(22, 80, 443, 3306, 9999);
-    private final Set<String> allowedProcesses = Set.of("java", "mysqld", "nginx", "sshd", "httpd");
+    private final Set<Integer> whitelistedPorts = new HashSet<>();
+    private final Set<String> whitelistedProcesses = new HashSet<>();
+    private final Set<Integer> blacklistedPorts = new HashSet<>();
+    private final Set<String> blacklistedProcesses = new HashSet<>();
 
     private final List<String> alerts = new ArrayList<>();
 
-    public PortAnalyzer() {}
+    public PortAnalyzer() {
+        loadRules("config/whitelist.json", whitelistedPorts, whitelistedProcesses);
+        loadRules("config/blacklist.json", blacklistedPorts, blacklistedProcesses);
+    }
+
+    private void loadRules(String path, Set<Integer> portSet, Set<String> processSet) {
+        try (FileReader reader = new FileReader(new File(path))) {
+            JSONObject obj = new JSONObject(new JSONTokener(reader));
+            JSONArray ports = obj.optJSONArray("ports");
+            JSONArray procs = obj.optJSONArray("processes");
+
+            if (ports != null) {
+                for (int i = 0; i < ports.length(); i++) {
+                    portSet.add(ports.getInt(i));
+                }
+            }
+            if (procs != null) {
+                for (int i = 0; i < procs.length(); i++) {
+                    processSet.add(procs.getString(i).toLowerCase());
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("[Analyzer] Failed to load rules from " + path + ": " + e.getMessage());
+        }
+    }
 
     public String analyze(List<PortEntry> portData) {
         alerts.clear();
         if (portData == null || portData.isEmpty()) {
-            alerts.add("[Analyzer] No port data to analyze.");
+            alerts.add("No port data provided.");
             return formatReport();
         }
-
-        detectUnusualActivity(portData);
-        detectUnauthorizedPorts(portData);
-        detectPortFlood(portData);
-
-        return formatReport();
-    }
-
-    private void detectUnusualActivity(List<PortEntry> entries) {
-        for (PortEntry entry : entries) {
-            if (entry.getPort() > HIGH_PORT_THRESHOLD) {
-                String msg = "High-numbered port in use: " + entry.getPort() + " by " + entry.getProcess();
+    
+        Set<String> seen = new HashSet<>(); // avoid duplicates
+    
+        for (PortEntry entry : portData) {
+            int port = entry.getPort();
+            String process = entry.getProcess().toLowerCase();
+            String key = port + "|" + process;
+    
+            if (!seen.add(key)) continue; // skip duplicates
+    
+            // Whitelist check — skip if port is whitelisted
+            if (whitelistedPorts.contains(port)) continue;
+    
+            // Blacklist match
+            if (blacklistedPorts.contains(port) || blacklistedProcesses.contains(process)) {
+                String msg = "CODE RED: Blacklisted port/process detected: " +
+                             port + " (" + entry.getProtocol() + ") by " + entry.getProcess();
                 alerts.add(msg);
                 SecureAlertSender.sendAlert(msg);
+                continue;
             }
-        }
-    }
-
-    private void detectUnauthorizedPorts(List<PortEntry> entries) {
-        for (PortEntry entry : entries) {
-            if (!allowedPorts.contains(entry.getPort()) &&
-                allowedProcesses.stream().noneMatch(proc -> entry.getProcess().toLowerCase().contains(proc))) {
-                String msg = "Unauthorized port detected: " + entry.getPort() +
+    
+            // Suspicious
+            if (whitelistedProcesses.stream().noneMatch(proc -> process.contains(proc))) {
+                String msg = "** Suspicious port detected: " + port +
                              " (" + entry.getProtocol() + ") by " + entry.getProcess();
                 alerts.add(msg);
                 SecureAlertSender.sendAlert(msg);
             }
         }
-    }
-
-    private void detectPortFlood(List<PortEntry> entries) {
-        long currentTime = System.currentTimeMillis();
-        Map<Integer, Long> portOpenTimes = new HashMap<>();
-
-        for (PortEntry entry : entries) {
-            portOpenTimes.put(entry.getPort(), currentTime);
+    
+        if (alerts.isEmpty()) {
+            alerts.add("All ports and processes are within expected behavior.");
         }
-
-        long count = portOpenTimes.values().stream()
-                .filter(ts -> (currentTime - ts) <= TIME_WINDOW_SECONDS * 1000L)
-                .count();
-
-        if (count >= PORT_FLOOD_THRESHOLD) {
-            String msg = "Potential port flood detected: " + count + " ports opened within last " + TIME_WINDOW_SECONDS + "s.";
-            alerts.add(msg);
-            SecureAlertSender.sendAlert(msg);
-        }
+    
+        return formatReport();
     }
 
     private String formatReport() {
