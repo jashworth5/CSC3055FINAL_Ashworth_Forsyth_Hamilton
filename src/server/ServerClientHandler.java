@@ -8,6 +8,7 @@ import java.io.*;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.time.Instant;
 import java.util.*;
 
 public class ServerClientHandler implements Runnable {
@@ -18,6 +19,7 @@ public class ServerClientHandler implements Runnable {
     private static final TOTPValidator totpValidator = new TOTPValidator("JBSWY3DPEHPK3PXP"); // test secret
     private static final File LOG_FILE = new File("logs/secure_log.txt");
     private static final File PORT_LOG_FILE = new File("logs/port_scan_log.txt");
+    private static final File PORT_REPORT_LOG = new File("logs/port_report_log.txt");
     private static final NonceTracker nonceTracker = new NonceTracker();
 
     public ServerClientHandler(Socket socket) {
@@ -113,6 +115,7 @@ public class ServerClientHandler implements Runnable {
                 if ("PORT_SCAN_RESULT".equals(eventType)) {
                     String ports = json.optString("ports", "No port data provided.");
                     System.out.println("[Server] PORT SCAN REPORT from " + username + ":\n" + ports);
+                    logRawPortReport(username, json.optString("timestamp"), ports);
 
                     String[] lines = ports.split("\n");
                     Set<String> trustedPorts = Set.of("22", "80", "443", "3306");
@@ -205,6 +208,17 @@ public class ServerClientHandler implements Runnable {
 
         try (BufferedWriter w = new BufferedWriter(new FileWriter(PORT_LOG_FILE, true))) {
             w.write(entry + "||" + newHash + "\n");
+        }
+    }
+
+    private void logRawPortReport(String username, String timestamp, String ports) {
+        try {
+            PORT_REPORT_LOG.getParentFile().mkdirs();
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(PORT_REPORT_LOG, true))) {
+                writer.write("[" + timestamp + "] " + username + " PORT REPORT:\n" + ports + "\n\n");
+            }
+        } catch (IOException e) {
+            System.err.println("[Server] Failed to write to port_report_log.txt: " + e.getMessage());
         }
     }
 

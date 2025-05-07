@@ -1,7 +1,9 @@
-package client;
+package server;
 
 import java.util.List;
 import java.util.Map;
+
+import client.PortEntry;
 
 public class PortAnalyzer {
 
