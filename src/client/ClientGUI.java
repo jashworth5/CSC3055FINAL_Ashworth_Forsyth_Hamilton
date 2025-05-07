@@ -97,7 +97,7 @@ public class ClientGUI extends JFrame {
     private JPanel createAlertScreen() {
         JPanel panel = new JPanel(new BorderLayout(10, 10));
 
-        JLabel header = new JLabel("Send Secure Alert", JLabel.CENTER);
+        JLabel header = new JLabel("Port Scan Dashboard", JLabel.CENTER);
         header.setFont(new Font("Arial", Font.BOLD, 16));
         panel.add(header, BorderLayout.NORTH);
 
@@ -108,11 +108,6 @@ public class ClientGUI extends JFrame {
 
         JPanel inputPanel = new JPanel();
         inputPanel.setLayout(new FlowLayout());
-        inputPanel.add(new JLabel("Message:"));
-        inputPanel.add(alertField);
-        JButton sendButton = new JButton("Send");
-        inputPanel.add(sendButton);
-        sendButton.addActionListener(e -> sendAlert());
 
         JButton scanButton = new JButton("Scan Ports");
         scanButton.addActionListener(e -> showPorts());
