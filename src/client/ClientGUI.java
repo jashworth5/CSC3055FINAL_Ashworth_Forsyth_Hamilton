@@ -18,6 +18,9 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.List;
 
@@ -196,6 +199,12 @@ public class ClientGUI extends JFrame {
                 sessionKey = new SecretKeySpec(decoded, 0, decoded.length, "AES");
                 SessionKeyManager.setSessionKey(username, sessionKey);
 
+                String lastLogin = findLastSuccessfulLogin(username);
+                if (lastLogin != null) {
+                    log("Last successful login: " + lastLogin);
+                }
+
+
                 log("Login successful. You can now send secure alerts.");
                 logLoginAttempt(username, true);
                 cardLayout.show(mainPanel, "alert");
@@ -267,6 +276,38 @@ public class ClientGUI extends JFrame {
             w.write(message + "||" + newHash + "\n");
         }
     }
+
+    private String findLastSuccessfulLogin(String username) {
+        if (!LOGIN_HISTORY_FILE.exists()) return null;
+    
+        List<String> successLines = new ArrayList<>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(LOGIN_HISTORY_FILE))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (line.contains(username + " - SUCCESS")) {
+                    successLines.add(line);
+                }
+            }
+        } catch (IOException e) {
+            return null;
+        }
+    
+        if (successLines.size() < 2) {
+            return "This is your first successful login.";
+        } else {
+            // Second to last successful login
+            String rawTimestamp = successLines.get(successLines.size() - 2).split(" - ")[0];
+            try {
+                Instant instant = Instant.parse(rawTimestamp);
+                ZonedDateTime zdt = instant.atZone(ZoneId.systemDefault());
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z");
+                return zdt.format(formatter);
+            } catch (Exception e) {
+                return rawTimestamp; // fallback
+            }
+        }
+    }
+    
 
     private void addToWhitelist(int port, String process) {
     File file = new File("config/whitelist.json");

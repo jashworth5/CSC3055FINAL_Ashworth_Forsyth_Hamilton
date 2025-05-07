@@ -136,3 +136,15 @@
 [2025-05-07T13:28:00.511111Z] alice PORT REPORT:
 [{"protocol":"TCP","process":"rapportd","port":58715},{"protocol":"TCP","process":"rapportd","port":58715},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"Microsoft","port":42050},{"protocol":"TCP","process":"Discord","port":6463},{"protocol":"TCP","process":"java","port":49157},{"protocol":"TCP","process":"java","port":9999}]
 
+[2025-05-07T13:29:32.150992Z] alice PORT REPORT:
+[{"protocol":"TCP","process":"rapportd","port":58715},{"protocol":"TCP","process":"rapportd","port":58715},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"Microsoft","port":42050},{"protocol":"TCP","process":"Discord","port":6463},{"protocol":"TCP","process":"java","port":49157},{"protocol":"TCP","process":"java","port":9999}]
+
+[2025-05-07T13:29:32.150992Z] alice PORT REPORT:
+[{"protocol":"TCP","process":"rapportd","port":58715},{"protocol":"TCP","process":"rapportd","port":58715},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"Microsoft","port":42050},{"protocol":"TCP","process":"Discord","port":6463},{"protocol":"TCP","process":"java","port":49157},{"protocol":"TCP","process":"java","port":9999}]
+
+[2025-05-07T13:39:38.269833Z] alice PORT REPORT:
+[{"protocol":"TCP","process":"rapportd","port":58715},{"protocol":"TCP","process":"rapportd","port":58715},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"Microsoft","port":42050},{"protocol":"TCP","process":"Discord","port":6463},{"protocol":"TCP","process":"java","port":49157},{"protocol":"TCP","process":"java","port":9999}]
+
+[2025-05-07T13:39:38.269833Z] alice PORT REPORT:
+[{"protocol":"TCP","process":"rapportd","port":58715},{"protocol":"TCP","process":"rapportd","port":58715},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"Microsoft","port":42050},{"protocol":"TCP","process":"Discord","port":6463},{"protocol":"TCP","process":"java","port":49157},{"protocol":"TCP","process":"java","port":9999}]
+
