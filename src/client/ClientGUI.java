@@ -7,6 +7,11 @@ import server.SessionKeyManager;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import javax.swing.*;
+
+import org.json.JSONTokener;
+import org.json.JSONObject;
+import org.json.JSONArray;
+
 import java.awt.*;
 import java.io.*;
 import java.net.Socket;
@@ -119,6 +124,13 @@ public class ClientGUI extends JFrame {
         );
         inputPanel.add(portScanButton);
 
+        JButton whitelistButton = new JButton("Add to Whitelist");
+        whitelistButton.addActionListener(e -> promptWhitelistEntry());
+        inputPanel.add(whitelistButton);
+
+        JButton blacklistButton = new JButton("Add to Blacklist");
+        blacklistButton.addActionListener(e -> promptBlacklistEntry());
+        inputPanel.add(blacklistButton);
 
         panel.add(inputPanel, BorderLayout.SOUTH);
         return panel;
@@ -256,6 +268,138 @@ public class ClientGUI extends JFrame {
         }
     }
 
+    private void addToWhitelist(int port, String process) {
+    File file = new File("config/whitelist.json");
+
+    try {
+        JSONObject data;
+        if (file.exists()) {
+            try (FileReader reader = new FileReader(file)) {
+                data = new JSONObject(new JSONTokener(reader));
+            }
+        } else {
+            data = new JSONObject();
+            data.put("ports", new JSONArray());
+            data.put("processes", new JSONArray());
+        }
+
+        JSONArray ports = data.optJSONArray("ports");
+        JSONArray processes = data.optJSONArray("processes");
+
+        if (port >= 0 && !ports.toList().contains(port)) {
+            ports.put(port);
+        }
+
+        if (process != null && !processes.toList().contains(process.toLowerCase())) {
+            processes.put(process.toLowerCase());
+        }
+
+        try (FileWriter writer = new FileWriter(file)) {
+            writer.write(data.toString(4)); // Pretty print
+        }
+
+        JOptionPane.showMessageDialog(this, "Whitelist updated.", "Success", JOptionPane.INFORMATION_MESSAGE);
+    } catch (Exception e) {
+        JOptionPane.showMessageDialog(this, "Failed to update whitelist:\n" + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+    }
+}
+
+
+    private void promptWhitelistEntry() {
+        String[] options = {"Port", "Process"};
+        int choice = JOptionPane.showOptionDialog(
+            this,
+            "What would you like to whitelist?",
+            "Add to Whitelist",
+            JOptionPane.DEFAULT_OPTION,
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            options,
+            options[0]
+        );
+    
+        if (choice == 0) { // Port
+            String input = JOptionPane.showInputDialog(this, "Enter port number:");
+            try {
+                int port = Integer.parseInt(input.trim());
+                addToWhitelist(port, null);
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Invalid port number.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } else if (choice == 1) { // Process
+            String input = JOptionPane.showInputDialog(this, "Enter process name:");
+            if (input != null && !input.trim().isEmpty()) {
+                addToWhitelist(-1, input.trim());
+            }
+        }
+    }
+
+    private void addToBlacklist(int port, String process) {
+        File file = new File("config/blacklist.json");
+    
+        try {
+            JSONObject data;
+            if (file.exists()) {
+                try (FileReader reader = new FileReader(file)) {
+                    data = new JSONObject(new JSONTokener(reader));
+                }
+            } else {
+                data = new JSONObject();
+                data.put("ports", new JSONArray());
+                data.put("processes", new JSONArray());
+            }
+    
+            JSONArray ports = data.optJSONArray("ports");
+            JSONArray processes = data.optJSONArray("processes");
+    
+            if (port >= 0 && !ports.toList().contains(port)) {
+                ports.put(port);
+            }
+    
+            if (process != null && !processes.toList().contains(process.toLowerCase())) {
+                processes.put(process.toLowerCase());
+            }
+    
+            try (FileWriter writer = new FileWriter(file)) {
+                writer.write(data.toString(4)); // Pretty print
+            }
+    
+            JOptionPane.showMessageDialog(this, "Blacklist updated.", "Success", JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Failed to update blacklist:\n" + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+    
+
+    private void promptBlacklistEntry() {
+        String[] options = {"Port", "Process"};
+        int choice = JOptionPane.showOptionDialog(
+            this,
+            "What would you like to blacklist?",
+            "Add to Blacklist",
+            JOptionPane.DEFAULT_OPTION,
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            options,
+            options[0]
+        );
+    
+        if (choice == 0) { // Port
+            String input = JOptionPane.showInputDialog(this, "Enter port number:");
+            try {
+                int port = Integer.parseInt(input.trim());
+                addToBlacklist(port, null);
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Invalid port number.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } else if (choice == 1) { // Process
+            String input = JOptionPane.showInputDialog(this, "Enter process name:");
+            if (input != null && !input.trim().isEmpty()) {
+                addToBlacklist(-1, input.trim());
+            }
+        }
+    }
+    
     private void logLoginAttempt(String username, boolean success) {
         String timestamp = Instant.now().toString();
         String status = success ? "SUCCESS" : "FAILURE";
