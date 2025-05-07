@@ -81,29 +81,3 @@ public class PortReporter {
     }
 }
 
-/**
- *  Port Reporting Protocol Overview
- *
- *  Updated Plan for Client-Server Intrusion Detection:
- *
- * CLIENT SIDE:
- * - PortScanner gathers all TCP ports in LISTEN state.
- * - PortReporter collects the scanned ports, wraps them in a JSON object, HMAC signs, encrypts, and sends to the server.
- *
- * SERVER SIDE:
- * - Server decrypts the incoming port telemetry using the session key.
- * - Server parses the JSON into a port list.
- * - Server compares the list against a known-good whitelist OR runs heuristics to detect suspicious ports.
- * - Server builds a response: e.g., "Ports OK" or "Suspicious port 9999 used by unknown process".
- * - Server sends this back as a simple JSON verdict.
- *
- *  ROUND-TRIP FLOW:
- * 1. Client scans ports and builds a structured report.
- * 2. Client signs and encrypts report, sends it to server.
- * 3. Server decrypts and inspects the report.
- * 4. Server generates a response verdict (e.g. warning or approval).
- * 5. Server sends the verdict back to the client.
- * 6. Client displays the server verdict in the GUI or logs it.
- *
- * 
- */
