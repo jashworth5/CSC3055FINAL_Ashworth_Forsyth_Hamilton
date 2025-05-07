@@ -1,6 +1,8 @@
 # Secure Intrusion Detection and Alert System (IDS)
 
 ## Team Member
+- Jack Ashworth
+- Owen Forsyth
 - David Hamilton
 
 ## Overview
@@ -15,5 +17,3 @@ This project implements a secure Intrusion Detection System (IDS) that includes:
 ## How to Use
 
 ### Server
-```bash
-java -cp ".;lib/bcprov.jar;lib/merrimackutil.jar" server.Server
