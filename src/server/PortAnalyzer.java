@@ -3,11 +3,11 @@ package server;
 import client.PortEntry;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.json.JSONTokener;
 
-import java.io.File;
 import java.io.FileReader;
 import java.util.*;
+
+import org.json.JSONTokener;
 
 public class PortAnalyzer {
 
@@ -16,15 +16,13 @@ public class PortAnalyzer {
     private final Set<Integer> blacklistedPorts = new HashSet<>();
     private final Set<String> blacklistedProcesses = new HashSet<>();
 
-    private final List<String> alerts = new ArrayList<>();
-
     public PortAnalyzer() {
         loadRules("config/whitelist.json", whitelistedPorts, whitelistedProcesses);
         loadRules("config/blacklist.json", blacklistedPorts, blacklistedProcesses);
     }
 
     private void loadRules(String path, Set<Integer> portSet, Set<String> processSet) {
-        try (FileReader reader = new FileReader(new File(path))) {
+        try (FileReader reader = new FileReader(path)) {
             JSONObject obj = new JSONObject(new JSONTokener(reader));
             JSONArray ports = obj.optJSONArray("ports");
             JSONArray procs = obj.optJSONArray("processes");
@@ -44,51 +42,34 @@ public class PortAnalyzer {
         }
     }
 
-    public String analyze(List<PortEntry> portData) {
-        alerts.clear();
-        if (portData == null || portData.isEmpty()) {
-            alerts.add("No port data provided.");
-            return formatReport();
-        }
-    
-        Set<String> seen = new HashSet<>(); // avoid duplicates
-    
-        for (PortEntry entry : portData) {
+    public JSONObject analyzeAndGroup(List<PortEntry> ports) {
+        JSONArray whitelistArray = new JSONArray();
+        JSONArray suspiciousArray = new JSONArray();
+        JSONArray blacklistArray = new JSONArray();
+
+        for (PortEntry entry : ports) {
             int port = entry.getPort();
             String process = entry.getProcess().toLowerCase();
-            String key = port + "|" + process;
-    
-            if (!seen.add(key)) continue; // skip duplicates
-    
-            // Whitelist check — skip if port is whitelisted
-            if (whitelistedPorts.contains(port)) continue;
-    
-            // Blacklist match
-            if (blacklistedPorts.contains(port) || blacklistedProcesses.contains(process)) {
-                String msg = "CODE RED: Blacklisted port/process detected: " +
-                             port + " (" + entry.getProtocol() + ") by " + entry.getProcess();
-                alerts.add(msg);
-                SecureAlertSender.sendAlert(msg);
-                continue;
-            }
-    
-            // Suspicious
-            if (whitelistedProcesses.stream().noneMatch(proc -> process.contains(proc))) {
-                String msg = "** Suspicious port detected: " + port +
-                             " (" + entry.getProtocol() + ") by " + entry.getProcess();
-                alerts.add(msg);
-                SecureAlertSender.sendAlert(msg);
-            }
-        }
-    
-        if (alerts.isEmpty()) {
-            alerts.add("All ports and processes are within expected behavior.");
-        }
-    
-        return formatReport();
-    }
+            JSONObject jsonEntry = new JSONObject()
+                    .put("port", port)
+                    .put("protocol", entry.getProtocol())
+                    .put("process", entry.getProcess());
 
-    private String formatReport() {
-        return String.join("\n", alerts);
+            if (blacklistedPorts.contains(port) || blacklistedProcesses.contains(process)) {
+                blacklistArray.put(jsonEntry);
+                SecureAlertSender.sendAlert("CODE RED: " + port + " (" + entry.getProtocol() + ") by " + entry.getProcess());
+            } else if (whitelistedPorts.contains(port) || whitelistedProcesses.stream().anyMatch(process::contains)) {
+                whitelistArray.put(jsonEntry);
+            } else {
+                suspiciousArray.put(jsonEntry);
+                SecureAlertSender.sendAlert("SUSPICIOUS: " + port + " (" + entry.getProtocol() + ") by " + entry.getProcess());
+            }
+        }
+
+        JSONObject grouped = new JSONObject();
+        grouped.put("whitelisted", whitelistArray);
+        grouped.put("suspicious", suspiciousArray);
+        grouped.put("blacklisted", blacklistArray);
+        return grouped;
     }
 }

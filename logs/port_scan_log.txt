@@ -84,3 +84,284 @@ Unauthorized port detected: 58611 (TCP) by Code.exe
 Unauthorized port detected: 42050 (TCP) by Microsoft.SharePoint.exe
 Unauthorized port detected: 49669 (TCP) by jhi_service.exe
 Potential port flood detected: 31 ports opened within last 60s.::[{"protocol":"TCP","process":"svchost.exe","port":135},{"protocol":"TCP","process":"System","port":445},{"protocol":"TCP","process":"mysqld.exe","port":3305},{"protocol":"TCP","process":"mysqld.exe","port":3306},{"protocol":"TCP","process":"svchost.exe","port":5040},{"protocol":"TCP","process":"System","port":5357},{"protocol":"TCP","process":"MMSSHOST.exe","port":6646},{"protocol":"TCP","process":"svchost.exe","port":7680},{"protocol":"TCP","process":"java.exe","port":9999},{"protocol":"TCP","process":"mysqld.exe","port":33060},{"protocol":"TCP","process":"mysqld.exe","port":33060},{"protocol":"TCP","process":"lsass.exe","port":49664},{"protocol":"TCP","process":"wininit.exe","port":49665},{"protocol":"TCP","process":"svchost.exe","port":49666},{"protocol":"TCP","process":"svchost.exe","port":49667},{"protocol":"TCP","process":"spoolsv.exe","port":49668},{"protocol":"TCP","process":"services.exe","port":49670},{"protocol":"TCP","process":"Code.exe","port":52399},{"protocol":"TCP","process":"java.exe","port":53067},{"protocol":"TCP","process":"Code.exe","port":58611},{"protocol":"TCP","process":"System","port":139},{"protocol":"TCP","process":"expressvpnd.exe","port":2015},{"protocol":"TCP","process":"language_server_windows_x64.exe","port":52504},{"protocol":"TCP","process":"language_server_windows_x64.exe","port":52516},{"protocol":"TCP","process":"language_server_windows_x64.exe","port":52523},{"protocol":"TCP","process":"ExpressVPNNotificationService.exe","port":53307},{"protocol":"TCP","process":"Code.exe","port":58595},{"protocol":"TCP","process":"language_server_windows_x64.exe","port":58728},{"protocol":"TCP","process":"language_server_windows_x64.exe","port":58732},{"protocol":"TCP","process":"language_server_windows_x64.exe","port":58741},{"protocol":"TCP","process":"System","port":139},{"protocol":"TCP","process":"svchost.exe","port":135},{"protocol":"TCP","process":"System","port":445},{"protocol":"TCP","process":"mysqld.exe","port":3305},{"protocol":"TCP","process":"mysqld.exe","port":3306},{"protocol":"TCP","process":"System","port":5357},{"protocol":"TCP","process":"svchost.exe","port":7680},{"protocol":"TCP","process":"java.exe","port":9999},{"protocol":"TCP","process":"mysqld.exe","port":33060},{"protocol":"TCP","process":"mysqld.exe","port":33060},{"protocol":"TCP","process":"lsass.exe","port":49664},{"protocol":"TCP","process":"wininit.exe","port":49665},{"protocol":"TCP","process":"svchost.exe","port":49666},{"protocol":"TCP","process":"svchost.exe","port":49667},{"protocol":"TCP","process":"spoolsv.exe","port":49668},{"protocol":"TCP","process":"services.exe","port":49670},{"protocol":"TCP","process":"Code.exe","port":52399},{"protocol":"TCP","process":"java.exe","port":53067},{"protocol":"TCP","process":"Code.exe","port":58611},{"protocol":"TCP","process":"Microsoft.SharePoint.exe","port":42050},{"protocol":"TCP","process":"jhi_service.exe","port":49669}]||esIR/VqJN3XWgUpi6f2v47vemT7FY6xHAJyMbJqYSy0=
+alice::2025-05-07T04:03:31.247127Z::{"blacklisted":[],"whitelisted":[{"protocol":"TCP","process":"java","port":9999}],"suspicious":[{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"Microsoft","port":42050},{"protocol":"TCP","process":"Discord","port":6463},{"protocol":"TCP","process":"java","port":49157}]}::[{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"Microsoft","port":42050},{"protocol":"TCP","process":"Discord","port":6463},{"protocol":"TCP","process":"java","port":49157},{"protocol":"TCP","process":"java","port":9999}]||6voxHnbSQhnKfLOE3MpV1Wi9vduMPIIBYrAkUQQOF/k=
+alice::2025-05-07T04:03:31.250960Z::{
+  "blacklisted": [],
+  "whitelisted": [{
+    "protocol": "TCP",
+    "process": "java",
+    "port": 9999
+  }],
+  "suspicious": [
+    {
+      "protocol": "TCP",
+      "process": "rapportd",
+      "port": 51319
+    },
+    {
+      "protocol": "TCP",
+      "process": "rapportd",
+      "port": 51319
+    },
+    {
+      "protocol": "TCP",
+      "process": "ControlCe",
+      "port": 7000
+    },
+    {
+      "protocol": "TCP",
+      "process": "ControlCe",
+      "port": 7000
+    },
+    {
+      "protocol": "TCP",
+      "process": "ControlCe",
+      "port": 5000
+    },
+    {
+      "protocol": "TCP",
+      "process": "ControlCe",
+      "port": 5000
+    },
+    {
+      "protocol": "TCP",
+      "process": "Microsoft",
+      "port": 42050
+    },
+    {
+      "protocol": "TCP",
+      "process": "Discord",
+      "port": 6463
+    },
+    {
+      "protocol": "TCP",
+      "process": "java",
+      "port": 49157
+    }
+  ]
+}::[{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"Microsoft","port":42050},{"protocol":"TCP","process":"Discord","port":6463},{"protocol":"TCP","process":"java","port":49157},{"protocol":"TCP","process":"java","port":9999}]||OWZnXraSuaBcm2o6NiMGNPto2IU1udhOG0byf30uVr4=
+alice::2025-05-07T04:07:58.197345Z::{"blacklisted":[],"whitelisted":[{"protocol":"TCP","process":"java","port":9999}],"suspicious":[{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"Microsoft","port":42050},{"protocol":"TCP","process":"Discord","port":6463},{"protocol":"TCP","process":"java","port":49157}]}::[{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"Microsoft","port":42050},{"protocol":"TCP","process":"Discord","port":6463},{"protocol":"TCP","process":"java","port":49157},{"protocol":"TCP","process":"java","port":9999}]||K7fdNGXBqOAIJrgngovafckLciavmFPHoPkJ/IHi4LY=
+alice::2025-05-07T04:07:58.200942Z::{
+  "blacklisted": [],
+  "whitelisted": [{
+    "protocol": "TCP",
+    "process": "java",
+    "port": 9999
+  }],
+  "suspicious": [
+    {
+      "protocol": "TCP",
+      "process": "rapportd",
+      "port": 51319
+    },
+    {
+      "protocol": "TCP",
+      "process": "rapportd",
+      "port": 51319
+    },
+    {
+      "protocol": "TCP",
+      "process": "ControlCe",
+      "port": 7000
+    },
+    {
+      "protocol": "TCP",
+      "process": "ControlCe",
+      "port": 7000
+    },
+    {
+      "protocol": "TCP",
+      "process": "ControlCe",
+      "port": 5000
+    },
+    {
+      "protocol": "TCP",
+      "process": "ControlCe",
+      "port": 5000
+    },
+    {
+      "protocol": "TCP",
+      "process": "Microsoft",
+      "port": 42050
+    },
+    {
+      "protocol": "TCP",
+      "process": "Discord",
+      "port": 6463
+    },
+    {
+      "protocol": "TCP",
+      "process": "java",
+      "port": 49157
+    }
+  ]
+}::[{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"Microsoft","port":42050},{"protocol":"TCP","process":"Discord","port":6463},{"protocol":"TCP","process":"java","port":49157},{"protocol":"TCP","process":"java","port":9999}]||ieJw5XYTafi+HfrwZuEQroBGr8XT4N4VCj4pquYlJpA=
+alice::2025-05-07T04:09:33.540730Z::{"blacklisted":[{"protocol":"TCP","process":"java","port":9999}],"whitelisted":[],"suspicious":[{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"Microsoft","port":42050},{"protocol":"TCP","process":"Discord","port":6463},{"protocol":"TCP","process":"java","port":49157}]}::[{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"Microsoft","port":42050},{"protocol":"TCP","process":"Discord","port":6463},{"protocol":"TCP","process":"java","port":49157},{"protocol":"TCP","process":"java","port":9999}]||OycgY1aiIpo5tIHNdI46nGt1ceNcXw25gCjf5A9RjRg=
+alice::2025-05-07T04:09:33.544338Z::{
+  "blacklisted": [{
+    "protocol": "TCP",
+    "process": "java",
+    "port": 9999
+  }],
+  "whitelisted": [],
+  "suspicious": [
+    {
+      "protocol": "TCP",
+      "process": "rapportd",
+      "port": 51319
+    },
+    {
+      "protocol": "TCP",
+      "process": "rapportd",
+      "port": 51319
+    },
+    {
+      "protocol": "TCP",
+      "process": "ControlCe",
+      "port": 7000
+    },
+    {
+      "protocol": "TCP",
+      "process": "ControlCe",
+      "port": 7000
+    },
+    {
+      "protocol": "TCP",
+      "process": "ControlCe",
+      "port": 5000
+    },
+    {
+      "protocol": "TCP",
+      "process": "ControlCe",
+      "port": 5000
+    },
+    {
+      "protocol": "TCP",
+      "process": "Microsoft",
+      "port": 42050
+    },
+    {
+      "protocol": "TCP",
+      "process": "Discord",
+      "port": 6463
+    },
+    {
+      "protocol": "TCP",
+      "process": "java",
+      "port": 49157
+    }
+  ]
+}::[{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"Microsoft","port":42050},{"protocol":"TCP","process":"Discord","port":6463},{"protocol":"TCP","process":"java","port":49157},{"protocol":"TCP","process":"java","port":9999}]||E7lJrv71xJNxFFjUxH+k3ZNZJJy0/k7uvPvd/Xv9+4A=
+alice::2025-05-07T04:15:55.647846Z::{"blacklisted":[{"protocol":"TCP","process":"java","port":9999}],"warning":"CODE RED: One or more blacklisted ports or processes detected! Please terminate them immediately.","whitelisted":[],"suspicious":[{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"Microsoft","port":42050},{"protocol":"TCP","process":"Discord","port":6463},{"protocol":"TCP","process":"java","port":49157}]}::[{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"Microsoft","port":42050},{"protocol":"TCP","process":"Discord","port":6463},{"protocol":"TCP","process":"java","port":49157},{"protocol":"TCP","process":"java","port":9999}]||SCxvKUoz3xDDCaeUsG2hOJlmD62nHnRrrWuEjWHMEmM=
+alice::2025-05-07T04:15:55.651832Z::{
+  "blacklisted": [{
+    "protocol": "TCP",
+    "process": "java",
+    "port": 9999
+  }],
+  "warning": "CODE RED: One or more blacklisted ports or processes detected! Please terminate them immediately.",
+  "whitelisted": [],
+  "suspicious": [
+    {
+      "protocol": "TCP",
+      "process": "rapportd",
+      "port": 51319
+    },
+    {
+      "protocol": "TCP",
+      "process": "rapportd",
+      "port": 51319
+    },
+    {
+      "protocol": "TCP",
+      "process": "ControlCe",
+      "port": 7000
+    },
+    {
+      "protocol": "TCP",
+      "process": "ControlCe",
+      "port": 7000
+    },
+    {
+      "protocol": "TCP",
+      "process": "ControlCe",
+      "port": 5000
+    },
+    {
+      "protocol": "TCP",
+      "process": "ControlCe",
+      "port": 5000
+    },
+    {
+      "protocol": "TCP",
+      "process": "Microsoft",
+      "port": 42050
+    },
+    {
+      "protocol": "TCP",
+      "process": "Discord",
+      "port": 6463
+    },
+    {
+      "protocol": "TCP",
+      "process": "java",
+      "port": 49157
+    }
+  ]
+}::[{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"Microsoft","port":42050},{"protocol":"TCP","process":"Discord","port":6463},{"protocol":"TCP","process":"java","port":49157},{"protocol":"TCP","process":"java","port":9999}]||iEim6K0Dw3WhwGXqsYC8Z+hR8Amg3DUjmXgfJKpFAp4=
+alice::2025-05-07T04:23:26.821953Z::{"blacklisted":[{"protocol":"TCP","process":"java","port":9999}],"whitelisted":[],"suspicious":[{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"Microsoft","port":42050},{"protocol":"TCP","process":"Discord","port":6463},{"protocol":"TCP","process":"java","port":49157}]}::[{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"Microsoft","port":42050},{"protocol":"TCP","process":"Discord","port":6463},{"protocol":"TCP","process":"java","port":49157},{"protocol":"TCP","process":"java","port":9999}]||GT1EOfVdY6IPf+u74Rx2QJboRL65EY1I2YtOYcmcKBE=
+alice::2025-05-07T04:23:26.825628Z::{
+  "blacklisted": [{
+    "protocol": "TCP",
+    "process": "java",
+    "port": 9999
+  }],
+  "whitelisted": [],
+  "suspicious": [
+    {
+      "protocol": "TCP",
+      "process": "rapportd",
+      "port": 51319
+    },
+    {
+      "protocol": "TCP",
+      "process": "rapportd",
+      "port": 51319
+    },
+    {
+      "protocol": "TCP",
+      "process": "ControlCe",
+      "port": 7000
+    },
+    {
+      "protocol": "TCP",
+      "process": "ControlCe",
+      "port": 7000
+    },
+    {
+      "protocol": "TCP",
+      "process": "ControlCe",
+      "port": 5000
+    },
+    {
+      "protocol": "TCP",
+      "process": "ControlCe",
+      "port": 5000
+    },
+    {
+      "protocol": "TCP",
+      "process": "Microsoft",
+      "port": 42050
+    },
+    {
+      "protocol": "TCP",
+      "process": "Discord",
+      "port": 6463
+    },
+    {
+      "protocol": "TCP",
+      "process": "java",
+      "port": 49157
+    }
+  ]
+}::[{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"rapportd","port":51319},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":7000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"ControlCe","port":5000},{"protocol":"TCP","process":"Microsoft","port":42050},{"protocol":"TCP","process":"Discord","port":6463},{"protocol":"TCP","process":"java","port":49157},{"protocol":"TCP","process":"java","port":9999}]||2pFLhOXGVrXDxUP6FDApPlXDbvVtoII7ytlUuQ20GrI=

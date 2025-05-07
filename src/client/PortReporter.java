@@ -59,14 +59,43 @@ public class PortReporter {
             String response = in.readLine();
             if (response != null && !response.trim().isEmpty()) {
                 String decrypted = MessageEncryptor.decrypt(response, sessionKey);
-                JSONObject result = new JSONObject(decrypted);
-                if (result.has("report")) {
-                    String report = result.getString("report");
-                    logArea.append("[Server Analysis]\n" + report + "\n");
-                } else {
-                    logArea.append("[Server Response] " + decrypted + "\n");
+                JSONObject json = new JSONObject(decrypted);
+
+                logArea.append("\n=== Port Scan Analysis ===\n\n");
+
+                logArea.append("🟢 Whitelisted:\n");
+                for (Object obj : json.optJSONArray("whitelisted")) {
+                    JSONObject entry = (JSONObject) obj;
+                    logArea.append(" - Port " + entry.getInt("port") + " (" +
+                            entry.getString("protocol") + ") - " +
+                            entry.getString("process") + "\n");
                 }
+                logArea.append("\n");
+
+                logArea.append("🟡 Suspicious:\n");
+                for (Object obj : json.optJSONArray("suspicious")) {
+                    JSONObject entry = (JSONObject) obj;
+                    logArea.append(" - Port " + entry.getInt("port") + " (" +
+                            entry.getString("protocol") + ") - " +
+                            entry.getString("process") + "\n");
+                }
+                logArea.append("\n");
+
+                logArea.append("🔴 Blacklisted:\n");
+                for (Object obj : json.optJSONArray("blacklisted")) {
+                    JSONObject entry = (JSONObject) obj;
+                    int port = entry.getInt("port");
+                    String protocol = entry.getString("protocol");
+                    String process = entry.getString("process");
+
+                    logArea.append(" - Port " + port + " (" + protocol + ") - " + process + "\n");
+                    logArea.append(" ⚠️  WARNING: Process '" + process + "' on port " + port + " should be terminated immediately.\n\n");
+                }
+
+                logArea.append("\n===========================\n\n");
             }
+
+
 
         } catch (Exception e) {
             logArea.append("[PortReporter] Failed to send port report: " + e.getMessage() + "\n");

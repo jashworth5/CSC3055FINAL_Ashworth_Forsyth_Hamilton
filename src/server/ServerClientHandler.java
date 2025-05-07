@@ -132,14 +132,18 @@ public class ServerClientHandler implements Runnable {
                     });
 
                     PortAnalyzer analyzer = new PortAnalyzer();
-                    String report = analyzer.analyze(entries);
+                    JSONObject groupedResult = analyzer.analyzeAndGroup(entries);
 
-                    JSONObject responseJson = new JSONObject();
-                    responseJson.put("report", report);
-                    String encryptedResponse = MessageEncryptor.encrypt(responseJson.toString(), key);
-                    out.write(encryptedResponse + "\n"); out.flush();
+                    // Log
+                    logPortScanSecure(username, json.optJSONArray("ports").toString(), groupedResult.toString());
 
-                    logPortScanSecure(username, ports, report);
+                    // Send back JSON verdict (grouped)
+                    String encryptedResponse = MessageEncryptor.encrypt(groupedResult.toString(), key);
+                    out.write(encryptedResponse + "\n");
+                    out.flush();
+
+                    logPortScanSecure(username, ports, groupedResult.toString(2)); // pretty-print JSON for logs
+
                 } else {
                     String ackMessage = "Alert received securely";
                     String encryptedAck = MessageEncryptor.encrypt(ackMessage, key);
