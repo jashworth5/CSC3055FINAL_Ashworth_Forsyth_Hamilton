@@ -71,7 +71,7 @@ public class ServerClientHandler implements Runnable {
 
             out.write("TOTP verified\n"); out.flush();
 
-            // ✅ Step 5: Setup session key and send to client
+            // Step 5: Setup session key and send to client
             SessionKeyManager.generateSessionKey(username);
             SecretKey key = SessionKeyManager.getSessionKey(username);
             String encodedKey = Base64.getEncoder().encodeToString(key.getEncoded());
@@ -87,7 +87,7 @@ public class ServerClientHandler implements Runnable {
             String decrypted = MessageEncryptor.decrypt(encrypted, key);
             JSONObject json = new JSONObject(decrypted);
 
-            // 🆕 Nonce check
+            // Nonce check
             String nonce = json.optString("nonce");
             if (nonce == null || nonce.isEmpty()) {
                 out.write("ERROR: Missing nonce\n"); out.flush(); return;
@@ -95,7 +95,7 @@ public class ServerClientHandler implements Runnable {
             if (nonceTracker.isNonceUsed(nonce)) {
                 out.write("ERROR: Nonce already used\n"); out.flush(); return;
             }
-            nonceTracker.addNonce(nonce); // Accept and remember this nonce
+            nonceTracker.addNonce(nonce); 
 
             // HMAC check
             String receivedHmac = json.getString("hmac");
