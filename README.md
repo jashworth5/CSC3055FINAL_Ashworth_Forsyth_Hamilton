@@ -16,7 +16,7 @@ This project implements a secure Intrusion Detection System (IDS) that includes:
 
 ## How to Use
 
-## Server Setup
+### Server Setup
 
 Compile and run:
 javac *.java
@@ -24,7 +24,7 @@ java Server
 
 Server listens on TCP port 9999
 
-## Client Setup
+### Client Setup
 
 Compile and run:
 javac *.java
